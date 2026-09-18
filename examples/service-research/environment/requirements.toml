@@ -1,0 +1,3 @@
+# 全部为考生可见内容，不包含 Judge 依赖或凭据。
+additional_software = []
+note = "使用平台已有 Agent、Python、办公编辑及图表工具即可。"

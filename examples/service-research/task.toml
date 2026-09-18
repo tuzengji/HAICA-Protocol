@@ -1,0 +1,65 @@
+# 可导入示例，包含报告、指标表、图表三个交付槽位。
+# 使用 Harbor 风格目录；assessment 是协议的任务配置命名空间。
+
+[task]
+name = "example/service-research"
+description = "使用给定运营数据，交付分析报告、指标表和图表。"
+
+[assessment]
+protocol_version = "1.0"
+task_revision = "example-001"
+title = "校园服务预约情况分析"
+language = "zh-CN"
+difficulity = "medium"
+birthday = "2026-09-18T10:00:00+08:00"
+duration_minutes = 60
+evaluation = "tests/evaluation.toml"
+
+[assessment.workspace]
+scope = "shared_per_user"
+compatible_profiles = ["linux-office", "windows-office"]
+
+[[assessment.artifacts]]
+id = "report"
+title = "分析报告"
+description = "季度指标、趋势、站点差异与改进建议。"
+kind = "file"
+content_type = "document"
+formats = ["md", "pdf", "docx"]
+views = ["text"]
+required = true
+min_files = 1
+max_files = 1
+max_bytes_per_file = 10485760
+max_total_bytes = 10485760
+missing_policy = "zero_dependent_criteria"
+
+[[assessment.artifacts]]
+id = "metrics"
+title = "指标表"
+description = "包含约定的五个指标，比例使用小数。"
+kind = "file"
+content_type = "spreadsheet"
+formats = ["csv"]
+views = ["cells", "files"]
+required = true
+min_files = 1
+max_files = 1
+max_bytes_per_file = 1048576
+max_total_bytes = 1048576
+missing_policy = "zero_dependent_criteria"
+
+[[assessment.artifacts]]
+id = "charts"
+title = "分析图表"
+description = "1～3 张有标题、单位和明确时间范围的图表。"
+kind = "file_set"
+content_type = "image"
+formats = ["png", "jpg", "jpeg"]
+views = ["image"]
+required = true
+min_files = 1
+max_files = 3
+max_bytes_per_file = 4194304
+max_total_bytes = 12582912
+missing_policy = "zero_dependent_criteria"

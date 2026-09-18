@@ -1,0 +1,80 @@
+# 私有评分计划；以下维度、权重、规则和结果均不向考生返回。
+protocol_version = "1.0"
+
+[aggregation]
+id = "weighted_sum/v1"
+max_score = 100
+round_decimals = 2
+on_error = "withhold_total"
+
+[[verifiers]]
+id = "metrics-check"
+kind = "python"
+plugin_api = "python/v1"
+entrypoint = "checks/check_metrics.py:run"
+timeout_seconds = 10
+network = "none"
+
+[[verifiers]]
+id = "text-judge"
+kind = "llm"
+plugin_api = "llm/v1"
+model_profile = "deepseek-text-v1"
+required_capabilities = ["text", "structured_output"]
+timeout_seconds = 120
+
+[[verifiers]]
+id = "visual-judge"
+kind = "llm"
+plugin_api = "llm/v1"
+model_profile = "deepseek-vision-v1"
+required_capabilities = ["text", "image", "structured_output"]
+timeout_seconds = 120
+
+[[rubrics]]
+id = "metric-accuracy"
+title = "指标计算准确"
+criterion = "五项指标逐项核对，每项正确得 1 个原始分；不通过项给出行定位或缺失证据。"
+verifier = "metrics-check"
+inputs = [{ artifact = "metrics", view = "files" }]
+references = [{ id = "source-data", path = "tests/references/service-usage.csv" }]
+scale_max = 5
+weight = 40
+evidence_required = true
+anchors = ["0：无正确指标", "1～4：正确项数", "5：五项均正确"]
+
+[[rubrics]]
+id = "analysis-grounding"
+title = "分析与建议有据可依"
+criterion = "评估报告对月度趋势、站点差异的解释以及建议是否由给定数据支持。用私有事实说明核对数字，不把指标表中的错误自动当作事实。不奖励材料无法推出的人数、成本、满意度或确定因果；明确标注待验证假设可接受。"
+verifier = "text-judge"
+inputs = [{ artifact = "report", view = "text" }, { artifact = "metrics", view = "cells" }]
+references = [{ id = "facts", path = "tests/references/facts.md" }]
+scale_max = 4
+weight = 30
+evidence_required = true
+anchors = ["0：无有效分析或关键结论与数据相反", "1：主要罗列数据且有明显误读", "2：主要趋势正确，解释或建议较泛", "3：趋势、站点差异正确，建议具体，只有轻微遗漏", "4：分析准确完整，建议可执行，明确区分结论与假设"]
+
+[[rubrics]]
+id = "source-and-scope"
+title = "来源与统计口径清楚"
+criterion = "检查报告是否明确材料文件、2026 年 6～8 月范围、季度比率用汇总分子分母计算，以及次数不等于独立人数。不能因贴了来源名便默认所有数字正确。"
+verifier = "text-judge"
+inputs = [{ artifact = "report", view = "text" }]
+references = [{ id = "dictionary", path = "tests/references/data-dictionary.md" }]
+scale_max = 4
+weight = 15
+evidence_required = true
+anchors = ["0：四项均不满足", "1：一项满足", "2：两项满足", "3：三项满足", "4：四项均满足"]
+
+[[rubrics]]
+id = "chart-clarity"
+title = "图表准确且易读"
+criterion = "综合评估槽位内全部图表：数值与基准一致，标题/月份/站点/指标/单位可理解，尺度不会误导，文本和图形清晰。需要同时比较图表、报告和指标表；不得只评价配色或仅看第一张图。"
+verifier = "visual-judge"
+inputs = [{ artifact = "charts", view = "image" }, { artifact = "report", view = "text" }, { artifact = "metrics", view = "cells" }]
+references = [{ id = "facts", path = "tests/references/facts.md" }]
+scale_max = 4
+weight = 15
+evidence_required = true
+anchors = ["0：图表不可读或关键数据错误", "1：可辨认但关键标注/尺度有明显问题", "2：数据基本正确，部分标注不足或可读性弱", "3：数据准确、标注完整，有少量阅读障碍", "4：全部图表准确清晰，无误导，且与其他产物一致"]
