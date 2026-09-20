@@ -2,7 +2,7 @@
 
 Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。
 
-当前正式版本：**V1.0**。任务包的 `protocol_version` 写作字符串 `"1.0"`；GitHub 发布标签为 [`v1.0.0`](https://github.com/tuzengji/HAICA_Protocol/releases/tag/v1.0.0)。
+当前正式版本：**V1.0**。任务包的 `protocol_version` 写作字符串 `"1.0"`；GitHub 发布标签为 [`v1.0.0`](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0)。
 
 HAICA Protocol 约定一道题要放哪些文件，以及平台怎样展示题面、接收交付物、判分和留档。出题者按这个格式打包，平台就能自动生成作答和评分流程。
 
@@ -265,7 +265,7 @@ Windows 文件桥在一次交卷请求中流式上传 ZIP，按每个交付项�
 
 ## 4. 评分计划
 
-`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位，并提供 `tests/checks/check_data.py`：
+`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位，并提供 `tests/checks/check-data.py`：
 
 ```toml
 protocol_version = "1.0"
@@ -280,7 +280,7 @@ on_error = "withhold_total"
 id = "data-check"
 kind = "python"
 plugin_api = "python/v1"
-entrypoint = "checks/check_data.py:run"
+entrypoint = "checks/check-data.py:run"
 timeout_seconds = 30
 network = "none"
 

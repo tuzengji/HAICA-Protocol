@@ -1,6 +1,6 @@
 # HAICA Protocol 多产物任务示例
 
-这个目录是一个符合 [HAICA Protocol V1.0](../../HAICA_Protocol.md)、可以导入平台的示例任务包，演示如何让一道题同时接收报告、数据表和图片，并用确定性检查与模型判卷共同评分。示例数据是为了演示协议而构造的，不代表真实业务。
+这个目录是一个符合 [HAICA Protocol V1.0](../../HAICA-Protocol.md)、可以导入平台的示例任务包，演示如何让一道题同时接收报告、数据表和图片，并用确定性检查与模型判卷共同评分。示例数据是为了演示协议而构造的，不代表真实业务。
 
 评分流程如下：评分规则写在 `tests/evaluation.toml`，中控按 rubric 调用判卷器，示例展示了完整的配置关系。
 
@@ -18,7 +18,7 @@ service-research/
 │       └── data-dictionary.md
 └── tests/                                 私有评分配置和参考资料
     ├── evaluation.toml
-    ├── checks/check_metrics.py
+    ├── checks/check-metrics.py
     └── references/
         ├── service-usage.csv
         ├── data-dictionary.md
@@ -58,7 +58,7 @@ service-research/
 
 ## Python 检查器接口
 
-`tests/checks/check_metrics.py:run(context)` 只接收评分引擎生成的只读上下文。示意结构如下：
+`tests/checks/check-metrics.py:run(context)` 只接收评分引擎生成的只读上下文。示意结构如下：
 
 ```python
 context = {

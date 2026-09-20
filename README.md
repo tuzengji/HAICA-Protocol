@@ -15,6 +15,6 @@ HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交�
 
 ## 从哪里开始
 
-- [完整协议](HAICA_Protocol.md)：查看文件结构、字段含义、评分接口和归档要求。
+- [完整协议](HAICA-Protocol.md)：查看文件结构、字段含义、评分接口和归档要求。
 - [任务示例](examples/service-research/)：参考一个包含报告、数据表和图片的任务包。
-- [GitHub 仓库](https://github.com/tuzengji/HAICA_Protocol)：获取协议文档、示例和发布版本。
+- [GitHub 仓库](https://github.com/tuzengji/HAICA-Protocol)：获取协议文档、示例和发布版本。
