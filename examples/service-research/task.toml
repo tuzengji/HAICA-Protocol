@@ -6,8 +6,8 @@ name = "example/service-research"
 description = "使用给定运营数据，交付分析报告、指标表和图表。"
 
 [assessment]
-protocol_version = "1.0"
-task_revision = "example-001"
+protocol_version = "1.1"
+task_revision = "example-1.1-002"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"
@@ -33,6 +33,7 @@ max_files = 1
 max_bytes_per_file = 10485760
 max_total_bytes = 10485760
 missing_policy = "zero_dependent_criteria"
+max_text_chars = 20000
 
 [[assessment.artifacts]]
 id = "metrics"
@@ -48,6 +49,8 @@ max_files = 1
 max_bytes_per_file = 1048576
 max_total_bytes = 1048576
 missing_policy = "zero_dependent_criteria"
+max_cells = 100
+max_cell_chars = 10000
 
 [[assessment.artifacts]]
 id = "charts"
@@ -57,9 +60,10 @@ kind = "file_set"
 content_type = "image"
 formats = ["png", "jpg", "jpeg"]
 views = ["image"]
+max_image_bytes = 2097152
 required = true
 min_files = 1
 max_files = 3
-max_bytes_per_file = 4194304
-max_total_bytes = 12582912
+max_bytes_per_file = 2097152
+max_total_bytes = 6291456
 missing_policy = "zero_dependent_criteria"

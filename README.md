@@ -1,6 +1,6 @@
 # AI协作能力测评协议
 
-Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.0**。
+Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.1**，任务包使用 `protocol_version = "1.1"`。
 
 HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交付物怎么提交、结果怎么评分和保存。出题者按它准备任务包，支持这个协议的平台就能自动生成作答、提交和评分流程。
 
@@ -17,4 +17,13 @@ HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交�
 
 - [完整协议](HAICA-Protocol.md)：查看文件结构、字段含义、评分接口和归档要求。
 - [任务示例](examples/service-research/)：参考一个包含报告、数据表和图片的任务包。
-- [GitHub 仓库](https://github.com/tuzengji/HAICA-Protocol)：获取协议文档、示例和发布版本。
+- [最新发布](https://github.com/tuzengji/HAICA-Protocol/releases/latest)：下载协议与示例的发布快照。
+
+## 版本维护
+
+仓库默认分支展示最新维护的协议、说明和通用示例，协议有修改时同步更新。Git 标签和 Release 保存发布时的内容，不随日常修改覆盖。
+
+- [V1.1 发布快照](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0)
+- [V1.0 历史版本](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0)
+
+本仓库只维护协议与通用示例。平台实现、真实题库和考生数据由各自项目管理。
