@@ -1,5 +1,5 @@
 # 私有评分计划；以下维度、权重、规则和结果均不向考生返回。
-protocol_version = "1.1"
+protocol_version = "1.2"
 
 [aggregation]
 id = "weighted_sum/v1"
@@ -66,6 +66,34 @@ scale_max = 4
 weight = 15
 evidence_required = true
 anchors = ["0：四项均不满足", "1：一项满足", "2：两项满足", "3：三项满足", "4：四项均满足"]
+
+[rubrics.scoring]
+id = "weighted_components/v1"
+groups = [{ id = "scope", weight = 1.0 }]
+
+[[rubrics.scoring.components]]
+id = "source"
+group = "scope"
+criterion = "明确给定材料文件来源。"
+levels = [{ id = "missing", score = 0, support_score = 0 }, { id = "correct", score = 1, support_score = 1 }]
+
+[[rubrics.scoring.components]]
+id = "period"
+group = "scope"
+criterion = "明确统计范围是 2026 年 6—8 月。"
+levels = [{ id = "missing", score = 0, support_score = 0 }, { id = "correct", score = 1, support_score = 1 }]
+
+[[rubrics.scoring.components]]
+id = "ratio"
+group = "scope"
+criterion = "说明季度比率使用汇总分子分母计算。"
+levels = [{ id = "missing", score = 0, support_score = 0 }, { id = "correct", score = 1, support_score = 1 }]
+
+[[rubrics.scoring.components]]
+id = "count"
+group = "scope"
+criterion = "明确预约次数不等于独立人数。"
+levels = [{ id = "missing", score = 0, support_score = 0 }, { id = "correct", score = 1, support_score = 1 }]
 
 [[rubrics]]
 id = "chart-clarity"

@@ -6,8 +6,8 @@ name = "example/service-research"
 description = "使用给定运营数据，交付分析报告、指标表和图表。"
 
 [assessment]
-protocol_version = "1.1"
-task_revision = "example-1.1-002"
+protocol_version = "1.2"
+task_revision = "example-1.2-001"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"
@@ -17,7 +17,7 @@ evaluation = "tests/evaluation.toml"
 
 [assessment.workspace]
 scope = "shared_per_user"
-compatible_profiles = ["linux-office", "windows-office"]
+compatible_profiles = ["linux-office"]
 
 [[assessment.artifacts]]
 id = "report"
@@ -33,7 +33,7 @@ max_files = 1
 max_bytes_per_file = 10485760
 max_total_bytes = 10485760
 missing_policy = "zero_dependent_criteria"
-max_text_chars = 20000
+max_text_chars = 2000000
 
 [[assessment.artifacts]]
 id = "metrics"
@@ -49,8 +49,8 @@ max_files = 1
 max_bytes_per_file = 1048576
 max_total_bytes = 1048576
 missing_policy = "zero_dependent_criteria"
-max_cells = 100
-max_cell_chars = 10000
+max_cells = 100000
+max_cell_chars = 2000000
 
 [[assessment.artifacts]]
 id = "charts"

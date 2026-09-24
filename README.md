@@ -1,17 +1,17 @@
 # AI协作能力测评协议
 
-Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.1**，任务包使用 `protocol_version = "1.1"`。
+Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.2**，任务包使用 `protocol_version = "1.2"`。
 
 HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交付物怎么提交、结果怎么评分和保存。出题者按它准备任务包，支持这个协议的平台就能自动生成作答、提交和评分流程。
 
 ## 它规定了什么
 
-- **题目**：要完成什么任务、有哪些材料、计入题库多少时间。整轮总时间为各题时间之和，考生可自由分配；云端退出暂停，Windows 连续计时。
+- **题目**：要完成什么任务、有哪些材料、计入题库多少时间。整轮总时间为各题时间之和，考生可自由分配；云端退出暂停。
 - **交付物**：要交哪些文件，以及格式、数量和大小要求。
 - **评分**：每条评分标准用 Python 脚本还是 Agent Judge 检查，最后怎么算出整题总分。每题满分 100 分。
 - **留档**：把原始任务、提交文件、可获取的 Agent 运行轨迹、评分过程和结果放在一起保存。当前只对最终产物评分，过程资料保留供查阅。
 
-例如，一道题要求提交报告和数据表。出题者分别写好这两项的要求与评分规则，平台就会生成两个文件选择入口；考生选好文件后，一次提交整道题，平台按规则逐条评分。
+例如，一道题要求提交报告和数据表。出题者分别写好这两项的要求与评分规则，平台就会生成两个文件选择入口；考生提交后仍可修改并重新提交；结束整轮测试时，以每题最后一次成功提交为准，平台再逐条评分。
 
 ## 从哪里开始
 
@@ -23,7 +23,10 @@ HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交�
 
 仓库默认分支展示最新维护的协议、说明和通用示例，协议有修改时同步更新。Git 标签和 Release 保存发布时的内容，不随日常修改覆盖。
 
-- [V1.1 发布快照](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0)
+- [V1.2 发布快照](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.2.0)
+- [V1.1 历史版本](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0)
 - [V1.0 历史版本](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0)
 
 本仓库只维护协议与通用示例。平台实现、真实题库和考生数据由各自项目管理。
+
+V1.2 提高文本、表格、页数与文件容量限制；大材料分批读取并核验完整覆盖。每条 LLM rubric、每次重试使用独立 DSH Agent；可声明结构化子项，由程序计算均分、权重及依赖上限。历史版本和成绩保留。
