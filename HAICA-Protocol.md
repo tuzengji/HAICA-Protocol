@@ -387,7 +387,7 @@ Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计�
 | --- | --- |
 | 每个最小评分项的判分尝试 | 最多 3 次，每次新建进程、home 和会话 |
 | 每次尝试的模型调用 / 工具调用 | 256 次 / 512 次，工具只含 `read_evidence` 与 `search_evidence` |
-| 每次模型响应 | 最多 16,384 个输出 token |
+| 每次模型响应 | 最多 131,072 个输出 token，包含思考内容；原始响应流最多 64 MiB |
 | 每个最小评分项的文字与参考资料 | 序列化后合计 32,000,000 字符，包含文件元数据 |
 | 每次尝试的完整输入包 | 512 MiB，包含图像编码 |
 | 每次发给模型的 HTTP 请求体 | 48 MiB；超过 40 MiB 时，平台将图片按原始字节上传并改用文件标识引用，保留全部文字 |
@@ -409,7 +409,7 @@ Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计�
 
 系统默认配置为：Rollout 使用 **DeepSeek V4.1 Flash / low**，每个判卷项使用 **DeepSeek V4.1 Flash / max**。两者 API 模型标识均为 `deepseek-flash`，`thinking.type` 均为 `enabled`，`reasoning_effort` 分别固定为 `low` 与 `max`。后台网关必须核验实际出站参数，不能只改显示名称或依赖 SDK 默认值；不允许静默降级。每次运行记录实际请求参数、返回模型标识和配置哈希。
 
-模型名映射依据 [DeepSeek 官方更新说明](https://api-docs.deepseek.com/updates/)，推理参数依据 [Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)。thinking 模式下 temperature 不起作用，平台不把它作为有效的评分控制参数。
+模型名映射依据 [DeepSeek 官方更新说明](https://api-docs.deepseek.com/updates/)，推理参数依据 [Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)。判卷显式设置 `max_tokens=131072`，与官方 max 模式的默认输出额度一致，避免沿用 16K 限制而在生成结果前截断思考；额度与响应流上限均记录在配置中，仍受单项时限和总轨迹容量约束。参数说明见 [Chat Completions API](https://api-docs.deepseek.com/api/create-chat-completion/)。thinking 模式下 temperature 不起作用，平台不把它作为有效的评分控制参数。
 
 `deepseek-flash` 是官方模型别名。平台保存请求的别名、响应中的模型标识和配置哈希；官方未提供不可变权重版本时，不能据此声称模型权重已经固定。跨时间比较分数需要另外做评分质量校准。
 
