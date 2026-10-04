@@ -1,36 +1,34 @@
 # AI协作能力测评协议
 
-Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.2**，任务包使用 `protocol_version = "1.2"`。
+Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V1.3**，任务包使用 `protocol_version = "1.3"`。
 
-HAICA Protocol 规定了人和 AI 协作完成任务时，题目怎么写、交付物怎么提交、结果怎么评分和保存。出题者按它准备任务包，支持这个协议的平台就能自动生成作答、提交和评分流程。
+HAICA Protocol 规定任务怎么写、交付物怎么提交、结果怎么评分和保存。
 
-## 它规定了什么
+## V1.3 的评分规则
 
-- **题目**：要完成什么任务、有哪些材料、计入题库多少时间。整轮总时间为各题时间之和，考生可自由分配；云端退出暂停。
-- **交付物**：要交哪些文件，以及格式、数量和大小要求。
-- **评分**：每条评分标准用 Python 脚本还是 Agent Judge 检查，最后怎么算出整题总分。每题满分 100 分。
-- **留档**：把原始任务、提交文件、可获取的 Agent 运行轨迹、评分过程和结果放在一起保存。当前只对最终产物评分，过程资料保留供查阅。
+**每一个评分子项，单独启动一个 DeepSeek Harness + DeepSeek 判卷会话。** 没有子项的 rubric 自身就是最小评分项；有 components 的 rubric 只负责分组，逐 component 判分，包括零权重前提项。不能在同一会话里一次判完多个子项。
 
-例如，一道题要求提交报告和数据表。出题者分别写好这两项的要求与评分规则，平台就会生成两个文件选择入口；考生提交后仍可修改并重新提交；结束整轮测试时，以每题最后一次成功提交为准，平台再逐条评分。
+后台评分脚本自动领取最终提交、展开评分计划、启动各项会话、校验结果、重试失败项、计算依赖上限与权重，并保存完整证据。不需要人或另一个调度 Agent 逐次发起判卷。
+
+每次尝试使用新的进程、home 和 session。各项不共享判分结果或上下文；公共原始材料可只读复用。分数由平台按声明的算式汇总。新版本计分项统一用 Agent Judge，文件校验和算分仍由程序完成；历史 Python 判卷规则保留在原版本中。
+
+V1.3 沿用 V1.2 的提交规则：考生在评测结束前可以修改并重新提交，结束时选定每题最后一次成功提交，后台自动评分。缺交和不合规输入按前置规则记录，评分故障不当作考生零分。
 
 ## 从哪里开始
 
-- [完整协议](HAICA-Protocol.md)：查看文件结构、字段含义、评分接口和归档要求。
-- [任务示例](examples/service-research/)：参考一个包含报告、数据表和图片的任务包。
-- [最新发布](https://github.com/tuzengji/HAICA-Protocol/releases/latest)：下载协议与示例的发布快照。
+- [完整协议](HAICA-Protocol.md)：字段、独立判卷粒度、结果与归档要求。
+- [任务示例](examples/service-research/)：报告、数据表和图表，4 个汇总组、16 个独立评分子项。
+- [最新发布](https://github.com/tuzengji/HAICA-Protocol/releases/latest)：协议与示例的发布快照。
 
-## 版本维护
+## 版本维护与历史结果
 
-仓库默认分支展示最新维护的协议、说明和通用示例，协议有修改时同步更新。Git 标签和 Release 保存发布时的内容，不随日常修改覆盖。
+默认分支展示最新维护内容，已发布标签与附件不覆盖：
 
-- [V1.2 发布快照](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.2.0)
-- [V1.1 历史版本](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0)
-- [V1.0 历史版本](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0)
+- [V1.3](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.3.0)
+- [V1.2](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.2.0)
+- [V1.1](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0)
+- [V1.0](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0)
 
-本仓库只维护协议与通用示例。平台实现、真实题库和考生数据由各自项目管理。
+升级框架不自动迁移题包或改写历史成绩。旧产物采用新协议复评时，单独保存源/目标题包及产物哈希、时间、逐项调用与新结果，保留原评分。协议发布、框架代码同步、线上部署和实际复评分开核验。
 
-V1.2 提高文本、表格、页数与文件容量限制；大材料分批读取并核验完整覆盖。每条 LLM rubric、每次重试使用独立 DSH Agent；可声明结构化子项，由程序计算均分、权重及依赖上限。历史版本和成绩保留。
-
-## 历史结果与复评
-
-新版本发布不追溯改变已提交文件、冻结题包或历史分数。沿用原题包重判与使用新版本比较评估应分别记录；后者保存原产物哈希、新旧版本、评分开始/结束时间、逐项执行及重试信息，保留原评分供对照。实现部署和真实评测数据由平台私有维护，不进入本协议仓库。
+公开仓库只包含协议与通用示例；真实题库、平台实现和评测数据分别维护。

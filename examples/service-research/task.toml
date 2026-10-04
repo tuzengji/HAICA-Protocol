@@ -6,8 +6,8 @@ name = "example/service-research"
 description = "使用给定运营数据，交付分析报告、指标表和图表。"
 
 [assessment]
-protocol_version = "1.2"
-task_revision = "example-1.2-001"
+protocol_version = "1.3"
+task_revision = "example-1.3-001"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"
@@ -42,7 +42,7 @@ description = "包含约定的五个指标，比例使用小数。"
 kind = "file"
 content_type = "spreadsheet"
 formats = ["csv"]
-views = ["cells", "files"]
+views = ["cells"]
 required = true
 min_files = 1
 max_files = 1

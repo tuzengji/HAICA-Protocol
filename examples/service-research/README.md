@@ -1,85 +1,36 @@
 # HAICA Protocol 多产物任务示例
 
-这个目录是一个按 [HAICA Protocol V1.2](../../HAICA-Protocol.md)编写的示例任务包，演示如何让一道题同时接收报告、数据表和图片，并用确定性检查与模型判卷共同评分。示例数据是为了演示协议而构造的，不代表真实业务。
+本目录符合 [HAICA Protocol V1.3](../../HAICA-Protocol.md)，使用人为构造的数据，演示报告、指标表和图片的交付与独立判卷。
 
-评分流程如下：评分规则写在 `tests/evaluation.toml`，中控按 rubric 调用判卷器，示例展示了完整的配置关系。
+## 文件
 
-## 文件结构
+- `instruction.md`：公开题面。
+- `task.toml`：任务与交付要求。
+- `environment/materials/`：公开数据与口径说明。
+- `tests/evaluation.toml`：私有评分计划。
+- `tests/references/`：私有事实基准与口径。
 
-```text
-service-research/
-├── instruction.md                         公开题面和交付要求
-├── task.toml                              任务规则与产物槽位（平台生成公开字段）
-├── README.md                              本说明（不发给考生）
-├── environment/
-│   ├── requirements.toml                  公开的环境说明
-│   └── materials/                         公开输入材料
-│       ├── service-usage.csv
-│       └── data-dictionary.md
-└── tests/                                 私有评分配置和参考资料
-    ├── evaluation.toml
-    ├── checks/check-metrics.py
-    └── references/
-        ├── service-usage.csv
-        ├── data-dictionary.md
-        └── facts.md
-```
+公开材料只有题面、environment 和平台生成的交付要求；评分配置与参考基准留在评分端。
 
-考生只能看到 `instruction.md` 和 `environment/`。`tests/` 中的规则、检查器和参考资料只在评分端使用。题面和配置中的产物 ID 必须保持一致：`report`、`metrics`、`charts`。
+## 自动评分
 
-## 题面产生的交付流程
+结束评测后，后台脚本选定最后一次成功提交，自动遍历评分计划。每个 component 启动独立的 DeepSeek Harness + DeepSeek 会话；读取本项证据后，只返回自己的档位、理由和定位。程序处理失败重试、依赖计算、分数组合与归档，无需人工或调度 Agent 发起下一项。
 
-考生选择三类产物并提交，结束前可修改后重新提交。提交时校验并冻结实际文件；结束整轮时选定最后成功版本，再统一评分。到时从未提交的题目按缺交处理，不自动选择工作空间文件。考生只看到总分和公开状态。source-and-scope 使用四个结构化子项，由同一个独立 DSH Agent 判断，平台计算四分量表。
+| 汇总组 | 独立子项数 | 判卷输入 | 权重 |
+| --- | ---: | --- | ---: |
+| 指标计算准确 | 5 | 指标表单元格与固定基准 | 40 |
+| 分析与建议有据可依 | 3 | 报告文字、指标表与事实说明 | 30 |
+| 来源与统计口径清楚 | 4 | 报告文字与口径说明 | 15 |
+| 图表准确且易读 | 4 | 全部图表、报告、指标表与事实说明 | 15 |
 
-| 产物 | 示例要求 | 评分读取方式 |
-| --- | --- | --- |
-| `report` | 一份 Markdown、PDF 或 DOCX 报告 | `text` |
-| `metrics` | 一份 UTF-8 CSV 指标表 | `cells`、`files` |
-| `charts` | 1～3 张 PNG/JPEG 图表 | `image` |
+有效完整提交需要 **16 个独立评分会话**，不含失败重试。每次重试另建进程、home 和 session，不把兄弟项的结果发给模型。组内子项等权，组间按上表汇总；任务包只声明逻辑模型配置，不存密钥或启动命令。
 
-三个交付项分别限制容量：报告最多 10 MiB，指标表最多 1 MiB，每张图最多 4 MiB、图表合计最多 12 MiB。容量只写在各项的 `max_total_bytes` 中；评分读取还受字符数、单元格数和图像字节上限约束。
+`report` 接收一份 Markdown/PDF/DOCX（最多 10 MiB）；`metrics` 接收一份 CSV（最多 1 MiB）；`charts` 接收 1～3 张 PNG/JPEG（每张最多 2 MiB，合计 6 MiB）。具体字符、单元格和图像读取上限见 task.toml。
 
-## 评分配置
+V1.3 不使用原示例的 Python 计分器。文件格式与哈希由平台校验，五个指标分别由独立 Agent 根据固定基准核对。缺交或无效输入按公开前置规则处理；处理服务故障使总分不可用，不给考生记零。
 
-`tests/evaluation.toml` 展示四条相互独立的评分标准：
+## 验证与使用
 
-| 标准 | 判卷器 | 权重 |
-| --- | --- | ---: |
-| 指标计算准确 | Python，从固定数据重新计算 | 40 |
-| 分析与建议有据可依 | 文字 Agent Judge | 30 |
-| 来源与统计口径清楚 | 文字 Agent Judge | 15 |
-| 图表准确且易读 | 视觉 Agent Judge，读取全部图表 | 15 |
+使用支持 V1.3 的框架校验题包；确认文件引用、输入能力、权重与容量均合格。结构校验不调用模型，也不能证明评分质量。发布前还须检查独立会话记录，并用正确、部分正确、错误和缺交样例校准判分。
 
-`deepseek-text-v1` 和 `deepseek-vision-v1` 是平台注册的逻辑配置名。当前实现通过 DeepSeek Harness 调用官方 `deepseek-flash`，每条 rubric 和每次重试建立独立 Agent Judge 会话，只读本项证据，保存完整判分轨迹；文字配置不接收图像，视觉配置可以接收图像。服务地址、模型版本和凭据由平台管理，密钥不能放进任务包。
-
-`linux-office` 是 Linux 云工作台环境配置名称。工具能力由平台统一提供，任务只声明允许在哪些环境作答；每次分配前，平台确认相应环境已经可用。
-
-每条 rubric 独立调用判卷器，先得到 `raw_score/scale_max`，再由配置中的 `weighted_sum/v1` 聚合为百分制总分。缺少某项产物时，依赖该产物的标准按题面公开规则处理；判卷器故障应保留失败状态，不能伪装成考生零分。
-
-## Python 检查器接口
-
-`tests/checks/check-metrics.py:run(context)` 只接收评分引擎生成的只读上下文。示意结构如下：
-
-```python
-context = {
-    "inputs": {
-        "metrics": {"files": [{
-            "path": "/readonly-submission/metrics/answer.csv",
-            "relative_path": "answer.csv",
-            "sha256": "引擎核验后的文件哈希",
-        }]}
-    },
-    "references": {
-        "source-data": "/readonly-task/tests/references/service-usage.csv",
-    },
-}
-result = run(context)
-```
-
-这些路径由评分引擎生成，插件不能把用户输入当作服务端路径。引擎负责权限、哈希、格式和容量检查；插件只返回当前 rubric 的结果。`feedback` 和 `evidence` 进入管理员报告，不返回给考生。
-
-## 导入前检查
-
-本示例声明 `protocol_version = "1.2"`，须由支持 V1.2 的平台导入。
-
-导入前应验证：TOML 可以解析；公开材料与私有参考资料完整；每个 rubric 引用存在的产物和 view；所有权重合计 100；各项容量上限不超过平台限制；评分脚本不会访问网络或写入题包。先用正确、部分正确、错误和缺交样例试判，再将任务分配给考生。
+此示例的题面与数据只用于演示，不代表真实业务。

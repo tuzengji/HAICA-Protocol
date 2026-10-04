@@ -2,11 +2,11 @@
 
 Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。
 
-当前版本：**V1.2**。任务包的 `protocol_version` 写作字符串 `"1.2"`。
+当前版本：**V1.3**。任务包的 `protocol_version` 写作字符串 `"1.3"`。
 
 HAICA Protocol 约定一道题要放哪些文件，以及平台怎样展示题面、接收交付物、判分和留档。出题者按这个格式打包，平台就能自动生成作答和评分流程。
 
-协议规定输入、输出和权限边界。页面样式、云厂商、模型厂商和服务器实现由平台决定。`protocol_version` 标识任务包格式；`task_revision` 和 `source_revision` 用于识别题目内容和绑定记录。结果包、归档和判卷接口各自使用独立的格式标识，例如 `task-result/v1`、`assessment-archive/v1`、`python/v1` 和 `llm/v1`。
+协议规定输入、输出和权限边界。页面样式、云厂商和服务器实现由平台决定；V1.3 的评分 Agent 固定为独立 DeepSeek Harness + DeepSeek。`protocol_version` 标识任务包格式；`task_revision` 和 `source_revision` 用于识别题目内容和绑定记录。结果包、归档和判卷接口各自使用独立的格式标识，例如 `task-result/v1`、`assessment-archive/v1`、`python/v1` 和 `llm/v1`。
 
 ## 1. 任务包结构
 
@@ -22,7 +22,6 @@ my-task/
 │   └── materials/                 # 可选：数据、参考文档、图片等
 ├── tests/                         # 必选：私有评分计划
 │   ├── evaluation.toml            # 必选：判卷器、rubrics 和汇总规则
-│   ├── checks/                    # 可选：Python 检查器
 │   ├── references/                # 可选：私有基准、事实和参考答案
 │   └── ...                         # 可选：其他只读评分资料
 ├── solution/                      # 可选：私有参考解，不发给考生
@@ -39,7 +38,7 @@ my-task/
     └── evaluation.toml            # 至少一条 rubric 和一个判卷器
 ```
 
-最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `weighted_sum/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。采用 Python 判卷时，必须再提供所声明的 `tests/checks/*.py`；引用材料或参考资料时，也必须提供相应文件。
+最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `weighted_sum/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。引用材料或参考资料时，也必须提供相应文件。
 
 ### 可见范围
 
@@ -96,7 +95,7 @@ name = "example/service-research"
 description = "根据给定数据完成分析并交付报告。"
 
 [assessment]
-protocol_version = "1.2"
+protocol_version = "1.3"
 task_revision = "research-001"
 title = "服务预约分析"
 language = "zh-CN"
@@ -121,7 +120,7 @@ compatible_profiles = ["linux-office"]
 
 | 字段 | 类型 / 必填 | 具体含义 |
 | --- | --- | --- |
-| `protocol_version` | 字符串 / 必填 | 整个任务包采用的格式版本，当前固定为 `"1.2"`。环境说明沿用这个版本。 |
+| `protocol_version` | 字符串 / 必填 | 整个任务包采用的格式版本，当前固定为 `"1.3"`。环境说明沿用这个版本。 |
 | `task_revision` | 字符串 / 必填 | 出题者给这份题目内容标记的修订号，例如 `research-001`，1–256 字符。它帮助人识别题目；平台另外计算整个题包的 SHA-256，实际评分绑定题包哈希。 |
 | `title` | 字符串 / 必填 | 显示给考生的题目名称，1–256 字符。 |
 | `language` | 字符串 / 必填 | 题面的主要语言标签，1–256 字符。建议使用 `zh-CN`、`en` 等语言代码；不会自动翻译内容。 |
@@ -274,21 +273,13 @@ XLSX 评分只读取可见工作表，排除 `hidden` 和 `veryHidden` 工作表
 `tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位，并提供 `tests/checks/check-data.py`：
 
 ```toml
-protocol_version = "1.2"
+protocol_version = "1.3"
 
 [aggregation]
 id = "weighted_sum/v1"
 max_score = 100
 round_decimals = 2
 on_error = "withhold_total"
-
-[[verifiers]]
-id = "data-check"
-kind = "python"
-plugin_api = "python/v1"
-entrypoint = "checks/check-data.py:run"
-timeout_seconds = 30
-network = "none"
 
 [[verifiers]]
 id = "quality-judge"
@@ -300,25 +291,25 @@ timeout_seconds = 120
 
 [[rubrics]]
 id = "accuracy"
-title = "数据准确"
-criterion = "交付物中的关键数据与参考资料一致。"
+title = "季度预约总量准确"
+criterion = "核验交付物中的季度预约总次数是否为 4350；正确得 4，否则得 0。"
 inputs = [{ artifact = "data", view = "cells" }]
-verifier = "data-check"
+verifier = "quality-judge"
 scale_max = 4
 weight = 50
 evidence_required = true
-anchors = ["0：没有可核验结果", "4：关键数据全部正确"]
+anchors = ["0：缺失或不正确", "4：数值为 4350"]
 
 [[rubrics]]
 id = "quality"
-title = "表达清楚"
-criterion = "报告的结论、依据和限制表达清楚。"
+title = "区分次数与人数"
+criterion = "核验报告是否明确说明记录次数不等于独立人数；明确说明得 4，否则得 0。"
 inputs = [{ artifact = "report", view = "text" }]
 verifier = "quality-judge"
 scale_max = 4
 weight = 50
 evidence_required = true
-anchors = ["0：没有可评估内容", "4：表达完整清楚"]
+anchors = ["0：未明确说明", "4：明确区分次数与独立人数"]
 ```
 
 ### 评分计划字段
@@ -327,10 +318,10 @@ anchors = ["0：没有可评估内容", "4：表达完整清楚"]
 
 | 字段 | 类型 / 必填 | 具体含义 |
 | --- | --- | --- |
-| `protocol_version` | 字符串 / 必填 | 固定为 `"1.2"`，必须与 `task.toml` 一致。 |
+| `protocol_version` | 字符串 / 必填 | 固定为 `"1.3"`，必须与 `task.toml` 一致。 |
 | `aggregation` | 配置表 / 必填 | 汇总每条 rubric 的分数，字段见下表。 |
 | `verifiers` | 配置表数组 / 必填 | 1–100 个判卷器配置，用 `[[verifiers]]` 声明。 |
-| `rubrics` | 配置表数组 / 必填 | 1–100 条评分标准，用 `[[rubrics]]` 声明。每条独立执行。 |
+| `rubrics` | 配置表数组 / 必填 | 1–100 个评分项或汇总组，用 `[[rubrics]]` 声明。无子项时本条独立判卷；有子项时逐子项独立判卷，父组不再判卷。 |
 | `extensions` | 配置表 / 可选 | 私有描述元数据，格式与任务配置中的扩展相同。 |
 
 `[aggregation]` 的四个字段均必填：
@@ -347,13 +338,11 @@ anchors = ["0：没有可评估内容", "4：表达完整清楚"]
 | 字段 | 类型 / 要求 | 具体含义 |
 | --- | --- | --- |
 | `id` | 字符串 / 必填 | 评分计划内唯一的小写 kebab-case 标识，最多 80 字符；rubric 用它选择判卷器。 |
-| `kind` | 字符串 / 必填 | `python` 用脚本检查；`llm` 用平台配置的 Agent Judge。 |
-| `plugin_api` | 字符串 / 必填 | `python` 固定用 `python/v1`；`llm` 固定用 `llm/v1`。 |
-| `timeout_seconds` | 整数 / 必填 | 该条 rubric 的单次判分最长运行秒数，1–3,600；超时记评分错误。 |
-| `entrypoint` | 字符串 / Python 必填 | 格式 `checks/file.py:function`，指向 `tests/checks/` 下实际存在的 Python 文件和函数名。模型判卷器不能填写。 |
-| `network` | 字符串 / Python 必填 | 固定为 `none`，脚本不能联网。模型判卷器不能填写；它的联网权限由平台管理。 |
-| `model_profile` | 字符串 / Agent Judge 必填 | 平台登记的逻辑配置：`deepseek-text-v1` 用于文字/表格，`deepseek-vision-v1` 还允许图像/页面。Python 判卷器不能填写。 |
-| `required_capabilities` | 字符串数组 / Agent Judge 必填 | **判卷器的输入能力**，不是工作空间软件清单。必须包含 `text`、`structured_output`；需要看图时再包含 `image`，并选择视觉配置。成员不重复，不得要求配置没有的能力。Python 判卷器不能填写。 |
+| `kind` | 字符串 / 必填 | 固定为 `llm`，每个最小评分项由 DeepSeek Harness + DeepSeek 判分。 |
+| `plugin_api` | 字符串 / 必填 | 固定为 `llm/v1`；这是接口标识，不随协议版本改成 v1.3。 |
+| `timeout_seconds` | 整数 / 必填 | 每个最小评分项（含每个 component）单次判分最长运行秒数，1–3,600；超时记评分错误。 |
+| `model_profile` | 字符串 / Agent Judge 必填 | 平台登记的逻辑配置：`deepseek-text-v1` 用于文字/表格，`deepseek-vision-v1` 还允许图像/页面。 |
+| `required_capabilities` | 字符串数组 / Agent Judge 必填 | **判卷器的输入能力**，不是工作空间软件清单。必须包含 `text`、`structured_output`；需要看图时再包含 `image`，并选择视觉配置。成员不重复，不得要求配置没有的能力。 |
 
 每个 `[[rubrics]]` 的字段：
 
@@ -368,33 +357,41 @@ anchors = ["0：没有可评估内容", "4：表达完整清楚"]
 | `weight` | 数字 / 必填 | 当前评分项占整题的分数权重，必须是有限正数，全部 rubric 的权重恰好合计 100。 |
 | `evidence_required` | 布尔值 / 必填 | 固定为 `true`，要求判卷器给出可核验的产物位置和证据。 |
 | `references` | 配置表数组 / 可选 | 私有参考文件，省略等于 `[]`。每项 `{id, path}` 的 `id` 是本评分项内唯一的 kebab-case 名称；`path` 是 `tests/`、`solution/` 或 `fixtures/` 内真实文件的相对路径。每个文件不超过 2 MiB。 |
-| `scoring` | 配置表 / 可选 | V1.2 LLM 子项计划，见结构化子项评分；不进入考生投影。 |
+| `scoring` | 配置表 / 可选 | V1.3 独立子项计划；每个 component 单独启动 DSH + DeepSeek，不进入考生投影。 |
 | `anchors` | 字符串数组 / 可选 | 非空、不重复的分档描述，例如 `["0：关键数据错误", "4：全部正确"]`。填写时数组不能空；省略则只按 `criterion` 判断。 |
 | `description` | 字符串 / 可选 | 评分项的补充说明，1–10,000 字符，只供评分端和管理员使用。 |
 
 模型不能只凭 `files` 路径视图判分；需要读取文字、单元格、页面或图像。`references` 不进入考生页面。平台保存这些材料的哈希，防止评分时引用发生变化。
 
-### 判卷器
+### 判卷器与最小评分项
 
-中控不执行题目作者自定义的总控脚本。它读取并校验 `evaluation.toml`，按其中的 `rubrics` 为每个评分项准备冻结产物视图，然后分别调用对应的 Python 或 LLM 判卷器，最后按 `aggregation` 汇总。脚本只负责当前评分项，平台保存各项的输入、输出和执行记录。
+评分必须由后台程序全自动驱动。平台在评测结束、冻结并选定最终提交后自动入队；常驻评分脚本领取任务，按配置遍历每个最小评分项，启动 Harness、校验返回、重试失败项、汇总分数并交由归档服务保存。不能依赖人或另一个调度 Agent 逐项发消息、选择下一项或手工回填成绩。所有执行决策来自冻结的评分计划与程序状态。
 
-- `python/v1` 只能引用 `tests/checks/` 中的入口，网络必须为 `none`。它接收评分引擎生成的只读上下文，不能把考生输入解释为服务端路径，也不能修改任务包或工作空间。
-- `llm/v1` 由 DeepSeek Harness 执行 Agent Judge，平台配置官方 `deepseek-flash` 模型。每条 rubric 和每次重试建立独立会话，只允许读取、搜索本项评分证据；不开放 shell、网页检索、编辑工具或考生沙盒。任务包只写逻辑 `model_profile` 和输入能力，不写服务地址、密钥或启动命令。
-- 判卷器只允许 `python/v1` 和 `llm/v1`；总控流程由中控负责，不由任务包内脚本负责。
+V1.3 的每一个实际评分项必须由独立的 **DeepSeek Harness + DeepSeek** 判卷。这里的“独立”指新进程、新 home、新 session，不是同一会话中的多条消息、多个工具调用或一次回答中的多行 JSON。
 
-当前 Agent Judge 的平台预算如下，任务包不能通过配置扩大它们：
+- 未声明 `scoring` 的 rubric 是一个最小评分项，单独启动一次判卷会话。
+- 声明 `scoring` 时，父 rubric 只负责组织与汇总；**每一个 component 单独启动判卷会话**，包括零权重前提项。父组不再额外判分。禁止把两个或更多子项交给同一会话、同一最终回答或同一共享上下文。
+- 最小项只给出一个可独立判断的要求。若“数据准确、表达自然、图表清晰”等要求能够分别得分，必须拆成不同 rubric 或 components，不能藏在一段 criterion、锚点或参考文档里后合并出分。
+- 单次评分运行内，每次子项重试也创建新的进程、home 和 session；仅重试失败项，已成功的兄弟项不跟着重判。一个子项失败不跳过其他子项；总时限已耗尽的未执行项须明确记录失败，整题不出总分。
+- 当前最小项只能读取其配置允许的冻结产物视图、题面及私有参考资料；不能接收兄弟项的判分结果、模型回答、上下文摘要或考生对话。共享原始只读文件不等于共享会话。公共基准可以复用，但每项都必须独立读取与核对。
+- `llm/v1` 使用平台配置的官方 `deepseek-flash`，只开放读取和搜索本项评分证据；不开放 shell、网页检索、编辑工具或考生沙盒。任务包不写服务地址、密钥或启动命令。
+- V1.3 不接受以 Python 代替 Agent 的计分 rubric。程序仍负责提交准入、哈希/文件/视图校验、依赖上限及加权算分；`python/v1` 仅为历史 V1.1/V1.2 题包兼容保留。
+
+缺交和不合规产物由公开的前置规则处理；没有可供模型评价的输入时，不伪造会话或标成“模型已判卷”。存储完整性或视图处理故障保持评分失败。这里的前置状态处理与下述对有效评分输入逐项独立判卷须分别留档。
+
+Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计算）：
 
 | 范围 | 上限 |
 | --- | --- |
-| 每条 rubric 的判分尝试 | 最多 3 次，每次新建进程、home 和会话 |
+| 每个最小评分项的判分尝试 | 最多 3 次，每次新建进程、home 和会话 |
 | 每次尝试的模型调用 / 工具调用 | 256 次 / 512 次，工具只含 `read_evidence` 与 `search_evidence` |
 | 每次模型响应 | 最多 16,384 个输出 token |
-| 每条 rubric 的文字与参考资料 | 序列化后合计 32,000,000 字符，包含文件元数据 |
+| 每个最小评分项的文字与参考资料 | 序列化后合计 32,000,000 字符，包含文件元数据 |
 | 每次尝试的完整输入包 | 512 MiB，包含图像编码 |
 | 每次发给模型的 HTTP 请求体 | 48 MiB；超过 40 MiB 时，平台将图片按原始字节上传并改用文件标识引用，保留全部文字 |
 | 每次模型请求的图片 | 最多 600 张，原始图片合计最多 200 MiB；每张仍遵守产物声明且不超过 4 MiB |
 | 每次尝试的评分输入、临时数据和轨迹 | 合计 4 GiB；最终响应文件最多 1 MiB |
-| 运行时间 | 不超过 `timeout_seconds`，同时不能超过整题评分剩余时间；整题评分预算由平台计算，最长 86,400 秒 |
+| 运行时间 | 不超过 `timeout_seconds`，同时不能超过整题评分剩余时间；整题评分预算由平台按全部最小项及重试次数计算，不以父组数量或旧版 86,400 秒截断 |
 
 平台软件和原生库缓存不计入这 4 GiB，但仍受判卷容器的总内存、磁盘和进程限制约束。缓存中不能存放考生文件、模型密钥或评分记录。大型评分输入使用私有磁盘临时目录，并降低并发，不把扩大容量理解为无限占用内存。
 
@@ -410,32 +407,11 @@ anchors = ["0：没有可评估内容", "4：表达完整清楚"]
 
 `deepseek-flash` 是官方模型别名。平台保存请求的别名、响应中的模型标识和配置哈希；官方未提供不可变权重版本时，不能据此声称模型权重已经固定。跨时间比较分数需要另外做评分质量校准。
 
-Python 入口必须是 `run(context)` 这样的单参数函数；函数名与 `entrypoint` 冒号后的名称一致。引擎提供以下上下文，检查器返回结果字典，不自行读写平台的提交记录：
+### 结构化子项评分（V1.3）
 
-```python
-context = {
-    "protocol_version": "1.2",
-    "rubric": {"id": "accuracy", "scale_max": 4},  # 本条 rubric 的完整配置
-    "inputs": {
-        "data": {
-            "files": [{
-                "path": "/受控冻结目录/answer.csv",
-                "relative_path": "answer.csv",
-                "sha256": "由引擎提供的真实 SHA-256",
-                "size_bytes": 128,
-            }],
-            "cells": [],  # 本条 inputs 声明的视图，由处理器填充
-        },
-    },
-    "references": {"source-data": "/受控题包目录/tests/references/data.csv"},
-}
-```
+rubric 可声明私有 `scoring`，保留 `weighted_components/v1` 的计算方式。V1.3 改变其执行粒度：有 N 个 components 就有 N 个独立 DSH + DeepSeek 判卷单位。无 `scoring` 时，本条 rubric 使用单独会话并返回下文的六字段结果。
 
-`path` 是引擎授予读取权限的本地路径，证据必须使用 `relative_path`。检查器不能自行拼接其他服务端路径；未声明的参考资料不进入 `references`。这段代码只说明字段形状，实际评分输入由引擎生成。
-
-### 结构化子项评分（V1.2）
-
-LLM rubric 可声明私有 `scoring`；Python rubric 和 V1.1 不接受该字段。未声明时仍使用下面的六字段评分结果。声明后，一个 DSH Agent 负责本 rubric 的全部子项，不另外共享其他 rubric 的会话或判分结果。
+父 rubric 的 `criterion` 和 `anchors` 仅用于维护者理解汇总组，不作为多项共同判卷指令发给子项 Agent。每个 component 的 `criterion` 必须自足；共用判分约束写入其可读参考资料。平台为每次调用生成仅含当前一个 component 的评分配置，移除兄弟项、组权重和 `supports_any` 关系，将局部 `scale_max` 设为 1。父组的原始量表与权重仅用于最后汇总。
 
 ```toml
 [rubrics.scoring]
@@ -459,15 +435,19 @@ supports_any = [["fact"]]
 - `groups` 为 1–16 组，ID 唯一，权重为有限非负数且恰好合计 1；零权重组用于独立核验前提，不增加得分。每组至少包含一个子项。
 - `components` 为 1–128 项，ID 在本 rubric 内唯一；ID 使用最多 80 字符的小写 kebab-case。`group` 必须存在，`criterion` 为 1–4,000 字符。
 - 每项的 `levels` 有 2–16 个唯一档位，均含 `id`、`score`、`support_score`。后两项为 0–1 的有限数值，须包含得分 0 和 1 的档位。`support_score` 单独声明该档位对后续关系的支持程度，允许局部算术错误保留方法分。
-- 可选 `supports_any` 有 1–32 组依赖；每组含 1–128 个不重复 ID，只能引用本 rubric 中前面声明的子项，禁止循环与跨会话取分。外部事实须作为本项自己的前提重新核验。
+- 可选 `supports_any` 有 1–32 组依赖；每组含 1–128 个不重复 ID，只能引用本 rubric 中前面声明的子项，禁止循环。依赖仅由平台在收齐独立结果后计算，模型不得读取其他会话的分数；本项判断需要的事实仍须自己核验。
 - 每个依赖组取实际支持分的最小值，多组取最大值作为上限；没有依赖时上限为 1。实际得分为 `min(score, 上限)`，实际支持分为 `min(support_score, 上限)`。
 - 平台计算 `raw_score = scale_max × Σ(组权重 × 组内实际得分均值)`，使用精确有理数计算后写入结果数值；不按锚点取整或另行扣分，整题汇总使用平台保存的精确分数，最后统一舍入。
 
-此时 Agent 的顶层响应必填 `status="completed"`、`scale_max`、`reason_code="evaluated"`、`components`，**不允许模型返回 raw_score**。可选的顶层 `feedback`、`evidence` 仍严格校验；省略时，平台生成计算说明，并用第一子项证据作为概览定位，完整证据保留在全部子项中。`components` 必须恰好覆盖声明的全部子项，每项只含 `id`、`level`、`feedback`、`evidence`。每项（包括零分项）都须有可校验的产物证据，缺失内容使用 absence 定位。遗漏、重复、非法档位、证据不符或额外字段均拒绝并重试；仍失败则总分不可用。
+每个子项 Agent 的响应必须含 `status="completed"`、`scale_max=1`、`reason_code="evaluated"` 和 **恰好一个成员**的 `components` 数组；该成员只能是当前子项，并且只含 `id`、`level`、`feedback`、`evidence`。禁止返回其他子项、父组总分、`raw_score` 或自行应用依赖扣分。可选顶层 `feedback`、`evidence` 仍校验。子项缺失、重复、额外子项、非法档位或证据不符，均仅重试当前子项；仍失败则整题总分为 `null`。
 
-归档结果在通用字段之外保存 `scoring_id`、`raw_score_fraction={numerator, denominator}` 及 `components` 计算明细，包含声明分、依赖上限和实际分。顶部说明由平台生成，避免模型自由文字与计算结果矛盾；其输入声明与模型原始响应同时保留，管理员可以复算；考生不接收这些私有资料。
+平台收齐全部独立判断后，用原始 scoring 配置计算依赖上限、组内均分、原始量表和权重；模型不得代算或自由修改结果。即使前置项给出最低档，后续项也照常独立判卷，再由程序应用上限。失败项不会拖走其他项已完成的记录。
 
-每个 rubric 独立调用一个判卷器；多个 rubric 可以引用同一个判卷器配置，每次执行仍是独立调用。Agent Judge 可以多轮读取证据再返回结果，平台同时保存 Harness 会话轨迹、模型请求响应和实际模型标识；这些资料只供管理员复核。平台可向 Agent Judge 提供只读定位标识：`evidence_ref` 指向当前文件视图；文字视图按顺序提供 `text_segments = [["t1", "原文块"], ...]`，每块最多 800 字符，逐块拼接就是完整原文。Judge 可返回 `{evidence_ref, locator_ref}` 选择文字块或表格位置，平台再补全路径、哈希和真实引文。原文不重复传输、不改写换行；最终结果中的 `text.quote` 仍须逐字存在于冻结文字视图中。
+归档结果保存 `scoring_id`、`raw_score_fraction={numerator, denominator}` 和 `components` 计算明细（声明分、依赖上限、实际分）。另外保存 `component_results`：每项的 ID、状态、开始/结束时间、档位、理由、证据和独立 `execution_attempts`。父组的 execution_attempts 汇总全部尝试，每条含 component_id、attempt、session_id、模型配置与输入哈希、调用次数、耗时和错误。父组总分与说明由程序生成。
+
+题目报告标记 `judging_granularity="one-component-per-session/v1"`，统计声明的最小项数、实际模型判卷完成数和失败数。零调用的缺交/无效输入不能冒充模型覆盖。每项和重试的会话身份、请求及原始响应都可独立追溯；考生不接收这些私有资料。
+
+每个最小评分项独立调用一个判卷器；多个项可以引用同一个判卷器配置，每项和每次重试仍使用独立会话。Agent Judge 可以多轮读取证据再返回结果，平台同时保存 Harness 会话轨迹、模型请求响应和实际模型标识；这些资料只供管理员复核。平台可向 Agent Judge 提供只读定位标识：`evidence_ref` 指向当前文件视图；文字视图按顺序提供 `text_segments = [["t1", "原文块"], ...]`，每块最多 800 字符，逐块拼接就是完整原文。Judge 可返回 `{evidence_ref, locator_ref}` 选择文字块或表格位置，平台再补全路径、哈希和真实引文。原文不重复传输、不改写换行；最终结果中的 `text.quote` 仍须逐字存在于冻结文字视图中。
 
 下面是判卷器成功时返回的 JSON；`contribution` 由中控计算，判卷器不能自行填写：
 
@@ -601,17 +581,16 @@ judge-evidence/
 ├── index.json
 └── <rubric-id>/<execution-number>/
     ├── metadata.json               # 执行身份、状态、实际模型与完整性记录
-    ├── request.json                # Python 输入或 Harness 指令与只读证据包
+    ├── request.json                # 当前最小项的 Harness 指令与只读证据包
     ├── response.json               # Agent Judge 最终响应、会话 ID、模型与用量
-    ├── result.json                 # 校验后的统一六字段结果
+    ├── result.json                 # 校验后的单项或单 component 结果
     ├── harness-files.json          # Harness 原始文件到归档文件的对应表
     ├── harness-*                   # 会话 JSONL、事件、工具调用与模型往返原始文件
-    ├── input.json                  # Python 输入，如适用
     ├── processor-request.json      # 受控视图处理请求，如适用
     └── processor.log               # 视图处理日志，如适用
 ```
 
-这些文件按实际执行类型保存：Python 检查器不生成 Harness 文件；中途失败时可能没有 `result.json`，但必须保留已获取的证据及失败原因。`harness-files.json` 记录原始路径和归档路径，不能假定 Harness 内部会话文件始终使用同一个名称。原始证据包括会话 JSONL、SDK 事件、`tool-calls.jsonl`、Harness 原生图像附件、每次模型请求/响应、HTTP 状态与完整性记录，以及运行日志。
+结构化子项使用 `<rubric-id>/components/<component-id>/<execution-number>/`，普通原子 rubric 沿用上图路径。index 和 metadata 必须同时记录 criterion_id、component_id（如适用）及 attempt，并校验身份一致；同名子项在不同父组下不得覆盖。历史 Python 记录保持原路径。中途失败时可能没有 `result.json`，但必须保留已获取的证据及失败原因。`harness-files.json` 记录原始路径和归档路径，不能假定 Harness 内部会话文件始终使用同一个名称。原始证据包括会话 JSONL、SDK 事件、`tool-calls.jsonl`、Harness 原生图像附件、每次模型请求/响应、HTTP 状态与完整性记录，以及运行日志。
 
 Agent Judge 返回结果后，平台还须确认同一会话的原生日志已经保存完毕：事件顺序连续，包含本次调用的完成事件，最后回答与返回结果一致。文件存在不等于保存完整；检查不通过时，本次判分失败，已取得的记录仍须保留。归档时再次检查，历史失败或不完整记录如实标注，不得冒充完整记录，也不得覆盖后来成功重试的结果。
 
@@ -752,24 +731,31 @@ rubric_family = "research"
 2. `task.toml`、`evaluation.toml` 可解析且没有拼写字段；
 3. 每个产物槽位都有题面说明，所有 rubric 引用存在的产物和 view；
 4. 权重合计 100，判卷器入口、输入能力、超时和网络权限符合约束；
-5. Python 检查器在正确、部分正确、错误、缺交和恶意文件样例上返回可解释结果；
-6. 模型判卷器要求结构化输出和定位证据，且每条 rubric 独立调用；
+5. 独立评分项在正确、部分正确、错误、缺交和恶意文件样例上返回可解释结果；
+6. 每个原子 rubric / component（含零权重项）都有独立 DSH + DeepSeek 进程、home、session；同项重试也独立，已成功项不重跑；
 7. 每个 `required = true` 的产物至少被一条 rubric 使用；如果产物只收集、不计分，应明确设为 `required = false`；
 8. 考生可见内容不包含 rubric、权重、参考资料、模型配置、私有路径或凭据；
 9. 重复提交、失败不覆盖、提交与结束并发、最后版本选定、结束后统一评分、到时缺交、旧版兼容、重判和归档均经过验证；
 10. 结果包可以独立验证，缺分为 `null`，缺失和失败原因可区分；
 11. 用不包含任何用户资料和任务文件的基线创建新工作空间。
 
-`examples/service-research/` 是一个可导入的示例题包，用来演示多产物、Python 检查器、文字 Agent Judge 和视觉 Agent Judge 的组合。它的材料和数值只属于示例，不是协议字段，也不应复制到正式任务中。
+`examples/service-research/` 是一个可导入的示例题包，用来演示多产物、文字与视觉 Agent Judge，以及 4 个汇总组下 16 个独立评分会话的配置。它的材料和数值只属于示例，不是协议字段，也不应复制到正式任务中。
 
 ## 版本兼容与历史保全
 
-V1.0、V1.1 文档与已发布标签保持原样。V1.2 是独立版本；题包 `task.toml`、`tests/evaluation.toml` 和提交清单使用相同版本，并更新 task_revision 与包哈希。框架可并存读取 V1.1/V1.2，但不得以新默认值改写已有题包、运行条件、提交、分数或归档。
+V1.0、V1.1、V1.2 文档与已发布标签保持原样。V1.3 是独立版本；题包 `task.toml`、`tests/evaluation.toml` 和提交清单使用相同版本，并更新 task_revision 与包哈希。框架可并存读取 V1.1/V1.2/V1.3，但不得以新默认值改写已有题包、运行条件、提交、分数或归档。
 
-新 V1.2 作答冻结 `finalization=last_successful_submission_at_assessment_end`、`deadline_action=freeze_latest_or_missing`、`grading_start=assessment_end`。旧 V1.1 作答保持创建时的一次提交规则。升级协议需开始新一轮，不能在进行中的评测中切换规则。
+新 V1.3 作答冻结 `finalization=last_successful_submission_at_assessment_end`、`deadline_action=freeze_latest_or_missing`、`grading_start=assessment_end`。旧 V1.1 作答保持创建时的一次提交规则。升级协议需开始新一轮，不能在进行中的评测中切换规则。
 
-V1.2 提交记录保存 `revision`、`previous_submission_id` 与 `selection_state`：最新成功但尚未结束为 provisional，更早版本为 superseded，结束选定版本为 final；已有旧提交视为 final。所有版本的原始清单和文件不可变。只有 final 版本进入评分与题库总分，其他版本保留在整轮归档及单题产物索引，禁止通过重判入口提前评分或改变最后版本选择。
+V1.3 提交记录保存 `revision`、`previous_submission_id` 与 `selection_state`：最新成功但尚未结束为 provisional，更早版本为 superseded，结束选定版本为 final；已有旧提交视为 final。所有版本的原始清单和文件不可变。只有 final 版本进入评分与题库总分，其他版本保留在整轮归档及单题产物索引，禁止通过重判入口提前评分或改变最后版本选择。
 
 管理员报告必须区分内容已评、材料无效、缺交和评分服务异常，并记录实际 LLM 执行情况。流程 completed 不能解释成模型已读取并评价全部内容。新协议下复评旧产物应另建比较记录，不覆盖原评分或历史归档。
 
-V1.2 的执行环境仅为 Linux 云工作台，compatible_profiles 必须为 ["linux-office"]；协议不再定义独立桌面连接、桌面提交或连续计时入口。历史 V1.1 环境标识只用于原资料的读取和复核。
+V1.3 的执行环境仅为 Linux 云工作台，compatible_profiles 必须为 ["linux-office"]；协议不再定义独立桌面连接、桌面提交或连续计时入口。历史 V1.1 环境标识只用于原资料的读取和复核。
+
+
+V1.3 继承 V1.2 的容量、作答与提交生命周期，只改变判卷原子性和相关执行记录。旧 V1.2 的结构化 rubric 仍按该版本的组级会话执行；升级框架不自动迁移旧题包或重写原分数。采用 V1.3 时须新建修订、同步 task 与 evaluation 的版本、把原 Python 计分项或隐含多项要求改成原子 Agent 评分项，并重新校准。
+
+总判卷时限必须按各组的子项数量 × 每项单次时限 × 最多三次尝试估算，并计入视图处理和实际并发。不能沿用只有父组数量的预算，也不能用合并子项会话节省调用数。框架在每个父组内串行执行子项，父组之间受统一并发上限约束；大图文输入按原有规则降低并发。
+
+服务进程崩溃后的整次评分恢复或管理员主动重判属于新的评分运行，须另建运行编号和证据目录并保留原记录；不能把这种整次重跑冒充某个子项的一次重试。
