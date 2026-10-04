@@ -6,6 +6,8 @@ HAICA Protocol 规定任务怎么写、交付物怎么提交、结果怎么评�
 
 ## V1.3 的评分规则
 
+系统默认：作答（Rollout）使用 **DeepSeek V4.1 Flash / low**；判卷使用 **DeepSeek V4.1 Flash / max**。API 模型标识均为 `deepseek-flash`，实际请求等级和模型标识须留档。
+
 **每一个评分子项，单独启动一个 DeepSeek Harness + DeepSeek 判卷会话。** 没有子项的 rubric 自身就是最小评分项；有 components 的 rubric 只负责分组，逐 component 判分，包括零权重前提项。不能在同一会话里一次判完多个子项。
 
 后台评分脚本自动领取最终提交、展开评分计划、启动各项会话、校验结果、重试失败项、计算依赖上限与权重，并保存完整证据。不需要人或另一个调度 Agent 逐次发起判卷。

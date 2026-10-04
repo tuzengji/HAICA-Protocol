@@ -405,6 +405,10 @@ Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计�
 
 运行时仍须复核实际输入大小。产物超过声明的视图读取上限，按 `invalid_artifact` 处理；模型请求超限、超时或轨迹未完整保存属于评分失败，整题总分保持 `null`。平台不会截断资料后假装完成判分，也不会把服务失败算成考生零分。发布前应使用交付要求允许的最大文件数量和读取量试判。
 
+系统默认配置为：Rollout 使用 **DeepSeek V4.1 Flash / low**，每个判卷项使用 **DeepSeek V4.1 Flash / max**。两者 API 模型标识均为 `deepseek-flash`，`thinking.type` 均为 `enabled`，`reasoning_effort` 分别固定为 `low` 与 `max`。后台网关必须核验实际出站参数，不能只改显示名称或依赖 SDK 默认值；不允许静默降级。每次运行记录实际请求参数、返回模型标识和配置哈希。
+
+模型名映射依据 [DeepSeek 官方更新说明](https://api-docs.deepseek.com/updates/)，推理参数依据 [Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/)。thinking 模式下 temperature 不起作用，平台不把它作为有效的评分控制参数。
+
 `deepseek-flash` 是官方模型别名。平台保存请求的别名、响应中的模型标识和配置哈希；官方未提供不可变权重版本时，不能据此声称模型权重已经固定。跨时间比较分数需要另外做评分质量校准。
 
 ### 结构化子项评分（V1.3）
