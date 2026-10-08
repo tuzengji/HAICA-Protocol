@@ -1,5 +1,5 @@
-# V1.4：每个 component 独立启动 DeepSeek Harness + DeepSeek；分组仅负责汇总。
-protocol_version = "1.4"
+# V1.5：每条 rubric 只评一个产物，全部子项由同一 LLM 请求或 Agent 会话判定。
+protocol_version = "1.5"
 
 [aggregation]
 id = "weighted_sum/v1"
@@ -18,8 +18,8 @@ timeout_seconds = 120
 
 [[verifiers]]
 id = "visual-judge"
-kind = "llm"
-plugin_api = "llm/v1"
+kind = "agent"
+plugin_api = "agent/v1"
 model_profile = "deepseek-vision-v1"
 required_capabilities = ["text", "image", "structured_output"]
 timeout_seconds = 120
@@ -27,7 +27,7 @@ timeout_seconds = 120
 [[rubrics]]
 id = "metric-accuracy"
 title = "指标计算准确"
-criterion = "本组仅作汇总；各子项的 criterion 独立定义判分要求。"
+criterion = "逐项按各子项 criterion 核验同一产物，返回全部子项的档位、理由与证据。"
 verifier = "text-judge"
 inputs = [{ artifact = "metrics", view = "cells" }]
 references = [{ id = "source-data", path = "tests/references/service-usage.csv" }, { id = "facts", path = "tests/references/facts.md" }, { id = "dictionary", path = "tests/references/data-dictionary.md" }]
@@ -73,9 +73,9 @@ levels = [{ id = "wrong", score = 0, support_score = 0 }, { id = "correct", scor
 [[rubrics]]
 id = "analysis-grounding"
 title = "分析与建议有据可依"
-criterion = "本组仅作汇总；各子项的 criterion 独立定义判分要求。"
+criterion = "逐项按各子项 criterion 核验同一产物，返回全部子项的档位、理由与证据。"
 verifier = "text-judge"
-inputs = [{ artifact = "report", view = "text" }, { artifact = "metrics", view = "cells" }]
+inputs = [{ artifact = "report", view = "text" }]
 references = [{ id = "facts", path = "tests/references/facts.md" }]
 scale_max = 1
 direction = "add"
@@ -107,7 +107,7 @@ levels = [{ id = "wrong", score = 0, support_score = 0 }, { id = "correct", scor
 [[rubrics]]
 id = "source-and-scope"
 title = "来源与统计口径清楚"
-criterion = "本组仅作汇总；各子项的 criterion 独立定义判分要求。"
+criterion = "逐项按各子项 criterion 核验同一产物，返回全部子项的档位、理由与证据。"
 verifier = "text-judge"
 inputs = [{ artifact = "report", view = "text" }]
 references = [{ id = "dictionary", path = "tests/references/data-dictionary.md" }]
@@ -147,9 +147,9 @@ levels = [{ id = "wrong", score = 0, support_score = 0 }, { id = "correct", scor
 [[rubrics]]
 id = "chart-clarity"
 title = "图表内容准确且标注完整"
-criterion = "本组仅作汇总；各子项的 criterion 独立定义判分要求。"
+criterion = "逐项按各子项 criterion 核验同一产物，返回全部子项的档位、理由与证据。"
 verifier = "visual-judge"
-inputs = [{ artifact = "charts", view = "image" }, { artifact = "report", view = "text" }, { artifact = "metrics", view = "cells" }]
+inputs = [{ artifact = "charts", view = "image" }]
 references = [{ id = "facts", path = "tests/references/facts.md" }]
 scale_max = 1
 direction = "add"
@@ -163,7 +163,7 @@ groups = [{ id = "items", weight = 1 }]
 [[rubrics.scoring.components]]
 id = "chart-values"
 group = "items"
-criterion = "逐一核对槽位内全部图表的数据与私有事实说明、报告及指标表一致，不得只看首图。"
+criterion = "逐一核对槽位内全部图表的数据与私有事实说明一致，不得只看首图。"
 levels = [{ id = "wrong", score = 0, support_score = 0 }, { id = "correct", score = 1, support_score = 1 }]
 
 [[rubrics.scoring.components]]
@@ -181,7 +181,7 @@ levels = [{ id = "wrong", score = 0, support_score = 0 }, { id = "correct", scor
 [[rubrics]]
 id = "chart-readability-penalty"
 title = "图表阅读障碍"
-criterion = "本组仅作汇总；子项独立判断所定义的阅读障碍，原始分越大扣分越多。"
+criterion = "逐项核验图表中定义的阅读障碍，原始分越大扣分越多。"
 verifier = "visual-judge"
 inputs = [{ artifact = "charts", view = "image" }]
 scale_max = 1

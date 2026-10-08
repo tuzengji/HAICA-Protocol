@@ -6,8 +6,8 @@ name = "example/service-research"
 description = "使用给定运营数据，交付分析报告、指标表和图表。"
 
 [assessment]
-protocol_version = "1.4"
-task_revision = "example-1.4-001"
+protocol_version = "1.5"
+task_revision = "example-1.5-001"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"
