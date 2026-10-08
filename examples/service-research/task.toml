@@ -7,7 +7,7 @@ description = "使用给定运营数据，交付分析报告、指标表和图�
 
 [assessment]
 protocol_version = "1.3"
-task_revision = "example-1.3-001"
+task_revision = "example-1.3-002"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"

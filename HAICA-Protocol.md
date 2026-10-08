@@ -38,7 +38,7 @@ my-task/
     └── evaluation.toml            # 至少一条 rubric 和一个判卷器
 ```
 
-最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `weighted_sum/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。引用材料或参考资料时，也必须提供相应文件。
+最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `additive_deductive/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。引用材料或参考资料时，也必须提供相应文件。
 
 ### 可见范围
 
@@ -209,7 +209,7 @@ missing_policy = "zero_dependent_criteria"
 | `max_files` | 整数 / 必填 | 最多文件数，1–1,000；单文件项固定为 1。 |
 | `max_bytes_per_file` | 整数 / 必填 | 每个文件的最大字节数，1–209,715,200（200 MiB），不能超过本项的 `max_total_bytes`。 |
 | `max_total_bytes` | 整数 / 必填 | **这个交付项内**所有文件的最大合计字节数，1–536,870,912（512 MiB）。不同交付项分别计算，题包不另设整题总容量字段。 |
-| `missing_policy` | 字符串 / 必填 | 固定为 `zero_dependent_criteria`：缺少该项时，引用该项的 rubric 记零分；没有引用它的 rubric 正常执行。 |
+| `missing_policy` | 字符串 / 必填 | 固定为 `zero_dependent_criteria`：缺少该项时，引用该项的 rubric 原始分和贡献均为 0，加分项不加分、减分项不扣分；没有引用它的 rubric 正常执行。 |
 | `max_depth` | 整数 / 目录必填 | 只用于 `directory`，范围 1–32。直接位于所选目录内的文件深度为 1，`a/b.csv` 深度为 2。 |
 | `required_paths` | 字符串数组 / 可选 | 仅用于目录，列出必有的文件相对路径，例如 `["src/main.py", "README.md"]`。省略或 `[]` 表示没有指定文件名；数量、深度和格式仍需符合本项限制。 |
 | `labels` | 字符串数组 / 可选 | 非空且不重复的描述标签，省略或 `[]` 表示无标签。只用于展示或筛选；实际读取和判分由 `views`、`rubric.inputs`、`rubric.verifier` 决定。 |
@@ -270,13 +270,14 @@ XLSX 评分只读取可见工作表，排除 `hidden` 和 `veryHidden` 工作表
 
 ## 4. 评分计划
 
-`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位，并提供 `tests/checks/check-data.py`：
+`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。新构造任务使用 `additive_deductive/v1`：基础分默认为 0，加分项的最高得分合计 100，减分项的最高扣分不设统一上限。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位：
 
 ```toml
 protocol_version = "1.3"
 
 [aggregation]
-id = "weighted_sum/v1"
+id = "additive_deductive/v1"
+base_score = 0 # 可省略；显式声明也只能为 0
 max_score = 100
 round_decimals = 2
 on_error = "withhold_total"
@@ -290,27 +291,45 @@ required_capabilities = ["text", "structured_output"]
 timeout_seconds = 120
 
 [[rubrics]]
-id = "accuracy"
-title = "季度预约总量准确"
-criterion = "核验交付物中的季度预约总次数是否为 4350；正确得 4，否则得 0。"
-inputs = [{ artifact = "data", view = "cells" }]
-verifier = "quality-judge"
-scale_max = 4
-weight = 50
-evidence_required = true
-anchors = ["0：缺失或不正确", "4：数值为 4350"]
-
-[[rubrics]]
-id = "quality"
-title = "区分次数与人数"
-criterion = "核验报告是否明确说明记录次数不等于独立人数；明确说明得 4，否则得 0。"
+id = "trend-analysis"
+title = "分析月度趋势"
+criterion = "报告是否用正确的月度数据支持趋势分析；有一组正确数据支持分析得 4，否则得 0。"
 inputs = [{ artifact = "report", view = "text" }]
 verifier = "quality-judge"
 scale_max = 4
+direction = "add"
 weight = 50
 evidence_required = true
-anchors = ["0：未明确说明", "4：明确区分次数与独立人数"]
+anchors = ["0：没有正确数据支持分析", "4：有一组正确数据支持分析"]
+
+[[rubrics]]
+id = "actionable-advice"
+title = "提出可执行建议"
+criterion = "报告是否提出至少一项有数据依据且明确行动对象的改进建议；满足得 4，否则得 0。"
+inputs = [{ artifact = "report", view = "text" }]
+verifier = "quality-judge"
+scale_max = 4
+direction = "add"
+weight = 50
+evidence_required = true
+anchors = ["0：没有符合要求的建议", "4：至少一项建议符合要求"]
+
+[[rubrics]]
+id = "incorrect-total"
+title = "季度预约总量错误"
+criterion = "检查指标表中声明的季度预约总次数；为 4350 或未声明该数值时原始分为 0，声明了其他数值时原始分为 1。原始分表示错误程度，不是正确程度。"
+inputs = [{ artifact = "data", view = "cells" }]
+verifier = "quality-judge"
+scale_max = 1
+direction = "deduct"
+weight = 120
+evidence_required = true
+anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到最高缺陷程度"]
 ```
+
+加分项最高分合计为 100；示例扣分项最高可扣 120 分，展示扣分值可以超过 100。若两项加分各得 50 分，同时发生上述错误，最终得分为 -20 分。这只是字段与计算示例，具体权重必须由出题者依据任务价值确定。
+
+核心内容、关键研究点、重要成果适合加分；格式问题、事实错误、逻辑问题、关键数据错误等适合扣分。由人类构造题目的时候来逐条判断 rubric 更适合哪种方式。扣分项的 `criterion`、`anchors` 或 `levels` 必须独立说明缺陷及严重程度：原始分 0 表示未发现所定义的缺陷，`scale_max` 表示全额扣分。平台不会自动把旧正确性得分取反。
 
 ### 评分计划字段
 
@@ -324,15 +343,16 @@ anchors = ["0：未明确说明", "4：明确区分次数与独立人数"]
 | `rubrics` | 配置表数组 / 必填 | 1–100 个评分项或汇总组，用 `[[rubrics]]` 声明。无子项时本条独立判卷；有子项时逐子项独立判卷，父组不再判卷。 |
 | `extensions` | 配置表 / 可选 | 私有描述元数据，格式与任务配置中的扩展相同。 |
 
-`[aggregation]` 的前四个字段均必填；公式模式另须声明 `formula`：
+`[aggregation]` 的 `id`、`max_score`、`round_decimals`、`on_error` 均必填；新题使用加减分模式。旧模式字段仅为已有题包和快照兼容保留：
 
 | 字段 | 类型 / 允许值 | 具体含义 |
 | --- | --- | --- |
-| `id` | 字符串 `weighted_sum/v1` 或 `formula/v1` | 前者按权重求和；后者用声明的算式汇总独立判断，适用于原有扣分、折扣与基线换算。 |
-| `max_score` | 数字 `100` | 每题满分固定 100 分，不是题库权重。 |
-| `round_decimals` | 整数 `2` | 只在最终总分上四舍五入至两位小数；中间贡献不先舍入。 |
+| `id` | 字符串 | 新题固定为 `additive_deductive/v1`，按加分减扣分汇总；`weighted_sum/v1` 和 `formula/v1` 仅兼容已有题包与快照，保留原语义。 |
+| `base_score` | 数字 `0` / 加减分模式可选 | 省略时默认为 0；显式声明只允许 0，旧模式禁止此字段。 |
+| `max_score` | 数字 `100` | 每题最高分固定 100 分，不限制扣分项最高扣分，也不设置最终得分下界；不是题库权重。 |
+| `round_decimals` | 整数 `2` | 只在最终总分上按十进制 half-up 舍入至两位小数；正负数均适用，中间贡献不先舍入。 |
 | `on_error` | 字符串 `withhold_total` | 任一必要评分失败时，总分保持 `null`，等待重试，不能算成考生零分。 |
-| `formula` | JSON 表达式字符串 / 公式模式必填 | 只引用已完成的 rubric 原始分，不执行 Python 或任意表达式。规则见“声明式算分”。 |
+| `formula` | JSON 表达式字符串 / 旧公式模式必填 | 加减分模式与旧加权模式禁止此字段；旧公式模式只引用已完成的 rubric 原始分，不执行 Python 或任意表达式。规则见“历史声明式算分”。 |
 
 每个 `[[verifiers]]` 的字段：
 
@@ -355,12 +375,13 @@ anchors = ["0：未明确说明", "4：明确区分次数与独立人数"]
 | `inputs` | 配置表数组 / 必填 | 至少一组 `{artifact, view}`：`artifact` 必须是已声明产物的 ID；`view` 必须是该产物声明的视图。同一组不能重复。只把这些输入交给当前判卷器。 |
 | `verifier` | 字符串 / 必填 | 引用一个已声明的 `verifiers[].id`。多条 rubric 可引用同一配置，但不会共享判分会话。 |
 | `scale_max` | 数字 / 必填 | 当前评分项原始分满分，必须是有限正数，例如 4。 |
-| `weight` | 数字 / 必填 | 加权模式必须是有限正数，全部权重合计 100；公式模式固定为 0，实际系数明确写在 formula 中。 |
+| `direction` | 字符串 / 加减分模式必填 | `add` 为加分项，`deduct` 为减分项；旧加权与公式模式禁止此字段。 |
+| `weight` | 数字 / 必填 | 加减分模式中为有限正数，表示本项最高加分或扣分；所有 `add` 项合计必须恰好为 100，`deduct` 项单项及总额不受 100 限制。旧加权模式所有权重合计 100；旧公式模式固定为 0。 |
 | `evidence_required` | 布尔值 / 必填 | 固定为 `true`，要求判卷器给出可核验的产物位置和证据。 |
 | `references` | 配置表数组 / 可选 | 私有参考文件，省略等于 `[]`。每项 `{id, path}` 的 `id` 是本评分项内唯一的 kebab-case 名称；`path` 是 `tests/`、`solution/` 或 `fixtures/` 内真实文件的相对路径。每个文件不超过 2 MiB。 |
 | `scoring` | 配置表 / 可选 | V1.3 独立子项计划；每个 component 单独启动 DSH + DeepSeek，不进入考生投影。 |
 | `measurement` | 配置表 / 可选 | 先从冻结文件提取客观数据，供独立 Judge 核验；不能产生评分或代替 Judge，见“客观测量”。 |
-| `anchors` | 字符串数组 / 可选 | 非空、不重复的分档描述，例如 `["0：关键数据错误", "4：全部正确"]`。填写时数组不能空；省略则只按 `criterion` 判断。 |
+| `anchors` | 字符串数组 / 可选 | 非空、不重复的分档描述；加分项可写 `["0：未满足要求", "4：全部满足"]`，减分项可写 `["0：无所定义缺陷", "4：最严重缺陷"]`。填写时数组不能空；省略则只按 `criterion` 判断。 |
 | `description` | 字符串 / 可选 | 评分项的补充说明，1–10,000 字符，只供评分端和管理员使用。 |
 
 模型不能只凭 `files` 路径视图判分；需要读取文字、单元格、页面、图像，或明确声明的客观测量数据。只有同时配置 measurement 时，模型评分项才可将 files 用作测量输入及证据定位。`references` 不进入考生页面。平台保存这些材料的哈希，防止评分时引用发生变化。
@@ -417,7 +438,7 @@ Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计�
 
 rubric 可声明私有 `scoring`，保留 `weighted_components/v1` 的计算方式。V1.3 改变其执行粒度：有 N 个 components 就有 N 个独立 DSH + DeepSeek 判卷单位。无 `scoring` 时，本条 rubric 使用单独会话并返回下文的六字段结果。
 
-父 rubric 的 `criterion` 和 `anchors` 仅用于维护者理解汇总组，不作为多项共同判卷指令发给子项 Agent。每个 component 的 `criterion` 必须自足；共用判分约束写入其可读参考资料。平台为每次调用生成仅含当前一个 component 的评分配置，移除兄弟项、组权重和 `supports_any` 关系，将局部 `scale_max` 设为 1。父组的原始量表与权重仅用于最后汇总。
+父 rubric 的 `criterion` 和 `anchors` 仅用于维护者理解汇总组，不作为多项共同判卷指令发给子项 Agent。每个 component 的 `criterion` 必须自足；共用判分约束写入其可读参考资料。平台为每次调用生成仅含当前一个 component 的评分配置，移除兄弟项、组权重和 `supports_any` 关系，将局部 `scale_max` 设为 1。父组的原始量表、方向与权重仅用于最后汇总，不把方向或权重交给 Judge。一个父 rubric 下所有 components 继承同一方向，不单独声明 `direction`；需要混合加分和减分时必须拆成不同父 rubric。扣分组的每个 component 都必须自足地描述缺陷程度，`score` 越大表示扣分越多。
 
 ```toml
 [rubrics.scoring]
@@ -443,7 +464,7 @@ supports_any = [["fact"]]
 - 每项的 `levels` 有 2–16 个唯一档位，均含 `id`、`score`、`support_score`。后两项为 0–1 的有限数值，须包含得分 0 和 1 的档位。`support_score` 单独声明该档位对后续关系的支持程度，允许局部算术错误保留方法分。
 - 可选 `supports_any` 有 1–32 组依赖；每组含 1–128 个不重复 ID，只能引用本 rubric 中前面声明的子项，禁止循环。依赖仅由平台在收齐独立结果后计算，模型不得读取其他会话的分数；本项判断需要的事实仍须自己核验。
 - 每个依赖组取实际支持分的最小值，多组取最大值作为上限；没有依赖时上限为 1。实际得分为 `min(score, 上限)`，实际支持分为 `min(support_score, 上限)`。
-- 平台计算 `raw_score = scale_max × Σ(组权重 × 组内实际得分均值)`，使用精确有理数计算后写入结果数值；不按锚点取整或另行扣分，整题汇总使用平台保存的精确分数，最后统一舍入。
+- 平台计算 `raw_score = scale_max × Σ(组权重 × 组内实际得分均值)`，使用精确有理数计算后写入结果数值；不按锚点取整，也不在子项计算阶段应用加减符号；整题汇总使用平台保存的精确分数及父项方向，最后统一舍入。
 
 每个子项 Agent 的响应必须含 `status="completed"`、`scale_max=1`、`reason_code="evaluated"` 和 **恰好一个成员**的 `components` 数组；该成员只能是当前子项，并且只含 `id`、`level`、`feedback`、`evidence`。禁止返回其他子项、父组总分、`raw_score` 或自行应用依赖扣分。可选顶层 `feedback`、`evidence` 仍校验。子项缺失、重复、额外子项、非法档位或证据不符，均仅重试当前子项；仍失败则整题总分为 `null`。
 
@@ -473,7 +494,7 @@ supports_any = [["fact"]]
 | 字段 | 类型 / 含义 |
 | --- | --- |
 | `status` | 字符串，固定为 `completed`，表示本次判分成功完成。 |
-| `raw_score` | 有限数字，范围 0 到该 rubric 的 `scale_max`，两端都允许。 |
+| `raw_score` | 有限数字，范围 0 到该 rubric 的 `scale_max`，两端都允许。加分项越大加得越多，减分项越大扣得越多；减分项不返回负原始分。 |
 | `scale_max` | 数字，必须与当前 rubric 的原始满分完全一致。 |
 | `reason_code` | `evaluated` 表示正常判分；`invalid_artifact` 表示产物内容无效，此时原始分必须为 0。 |
 | `feedback` | 1–12,000 字符的非空文字，简要说明为什么给这个分数，仅供管理员查看。 |
@@ -503,18 +524,26 @@ supports_any = [["fact"]]
 
 ### 汇总规则
 
-采用 `weighted_sum/v1` 时，对于每条 rubric：
+新任务采用 `additive_deductive/v1`，初始基础分为 0。每个 rubric 的非负原始分先换算为加分或扣分数额：
 
 ```text
-贡献 = raw_score / scale_max × weight
-总分 = 四舍五入到 round_decimals 位的所有贡献之和
+本项数额 = raw_score / scale_max × weight
+加分项 contribution = 本项数额
+减分项 contribution = -本项数额
+最终得分 = half-up 保留两位小数（Σ加分项数额 - Σ减分项数额）
 ```
 
-协议把每道题的满分固定为 100，`aggregation.max_score` 必须为 100。加权模式的 rubric 权重总和必须为 100；只在最后一步舍入。缺少产物时，按该槽位的 `missing_policy` 处理依赖它的 rubric；无关 rubric 不受影响。任一必要评分环节失败时，总分为 `null`，并在管理员结果中写明失败原因。
+所有加分项的 `weight` 必须恰好合计 100，减分项的单项和合计最高扣分均不设 100 分限制；每项 `weight` 仍必须是有限正数。允许没有减分项。`aggregation.max_score` 固定为 100，最终得分最高为 100，**可以为负分，不做 0 分下界截断，也不另作映射**。采用精确分数计算中间值，只在最终总分执行十进制 half-up 舍入；例如 1.235 → 1.24，-1.235 → -1.24。负分是有效成绩，不能当成缺分或评分失败。
 
-### 声明式算分
+缺失或无效产物继续按 `zero_dependent_criteria` 处理：依赖它的加分项和减分项原始分与贡献均为 0；不依赖它的评分项正常判卷。整项缺交与已提交材料中定义明确的错误要分别处理，不因方向变化把缺交自动记成最大扣分。任一必要评分环节失败时，总分为 `null`，并在管理员结果中写明失败原因。
 
-`formula/v1` 用于保留已有的扣分、乘法折扣、硬门槛和相对基线计分。每个实际判断仍由独立 DSH + DeepSeek 产生，程序只在全部结果有效后做算术。不得把算式或其他 Judge 的输出交给某个模型再次决定总分。
+管理员评分明细保留评分计划中的方向、最高加/扣分、非负原始分和带符号的 `contribution`，使逐项贡献之和可复核为最终得分；模型仍只输出当前项原始判断，由平台应用加减方向。
+
+已有 `weighted_sum/v1` 题包和快照继续使用 `contribution = raw_score / scale_max × weight`，所有权重合计 100，总分范围仍为 0–100；已有 `formula/v1` 保留下节规则。两个旧模式均禁止 `direction` 和 `base_score`，不自动迁移旧题包、历史成绩或正在进行的评测。
+
+### 历史声明式算分
+
+`formula/v1` 仅用于兼容已有题包和快照的扣分、乘法折扣、硬门槛和相对基线计分。每个实际判断仍由独立 DSH + DeepSeek 产生，程序只在全部结果有效后做算术。不得把算式或其他 Judge 的输出交给某个模型再次决定总分。
 
 formula 是 JSON 字符串：数字为常数；字符串为本计划的 rubric ID，取该项 raw_score（有精确有理数记录时使用该记录）；数组为 `[操作, 参数...]`。允许 add、mul、min、max（1–100 个参数），sub、div（两个参数），以及 round（数值和 0–8 位小数）。round 的整个数值参数子树按 Python 浮点算术及 ties-to-even 舍入执行，以保留旧脚本的运算次序；不能仅把有理数最终转为浮点后舍入，因为 `round(0.7 / 112, 4)` 与先精确计算分数的结果可能不同。例如 `formula = '["mul",100,"correctness","validity"]'`，两个独立项的满分均为 1，表示有效性门槛乘正确度。
 
@@ -534,10 +563,10 @@ formula 是 JSON 字符串：数字为常数；字符串为本计划的 rubric I
 
 题目本身和题目集是两层评分，不要把两种权重混在一起：
 
-- 每道题的满分固定为 100 分。`rubric.weight` 只在这道题内部使用，合计必须为 100；
+- 每道题最高为 100 分，采用加减分模式时可以为负分。`rubric.weight` 只在这道题内部使用，加分项合计必须为 100，减分项最高扣分不受 100 限制；
 - 题目集由多道题组成后，平台再为每道题设置 `question_weight`。这个权重不写进任务包，也不进入 `evaluation.toml`；
 - 一个题目集的题目权重必须都为正数，且合计为 100。题目集清单中的每道题只能出现一次，题目集中的每道题都必须有一个权重；
-- 题目集总分按下面的公式计算，最后保留两位小数：
+- 题目集总分按下面的公式计算，最后按十进制 half-up 保留两位小数，允许负分且不截断到 0：
 
 ```text
 题目集总分 = Σ（题目得分 × question_weight / 100）
@@ -754,7 +783,7 @@ rubric_family = "research"
 1. 任务包路径、编码、文件类型、硬链接和链接检查通过；
 2. `task.toml`、`evaluation.toml` 可解析且没有拼写字段；
 3. 每个产物槽位都有题面说明，所有 rubric 引用存在的产物和 view；
-4. 权重合计 100，判卷器入口、输入能力、超时和网络权限符合约束；
+4. 新题基础分为 0，逐条声明加/减方向，加分项最高得分恰好合计 100，扣分项最高扣分均为有限正数；判卷器入口、输入能力、超时和网络权限符合约束；
 5. 独立评分项在正确、部分正确、错误、缺交和恶意文件样例上返回可解释结果；
 6. 每个原子 rubric / component（含零权重项）都有独立 DSH + DeepSeek 进程、home、session；同项重试也独立，已成功项不重跑；
 7. 每个 `required = true` 的产物至少被一条 rubric 使用；如果产物只收集、不计分，应明确设为 `required = false`；
@@ -763,7 +792,7 @@ rubric_family = "research"
 10. 结果包可以独立验证，缺分为 `null`，缺失和失败原因可区分；
 11. 用不包含任何用户资料和任务文件的基线创建新工作空间。
 
-`examples/service-research/` 是一个可导入的示例题包，用来演示多产物、文字与视觉 Agent Judge，以及 4 个汇总组下 16 个独立评分会话的配置。它的材料和数值只属于示例，不是协议字段，也不应复制到正式任务中。
+`examples/service-research/` 是一个可导入的示例题包，用来演示多产物、文字与视觉 Agent Judge，以及 4 个加分汇总组、1 个减分汇总组下 16 个独立评分会话的配置。它的材料和数值只属于示例，不是协议字段，也不应复制到正式任务中。
 
 ## 版本兼容与历史保全
 
@@ -778,7 +807,7 @@ V1.3 提交记录保存 `revision`、`previous_submission_id` 与 `selection_sta
 V1.3 的执行环境仅为 Linux 云工作台，compatible_profiles 必须为 ["linux-office"]；协议不再定义独立桌面连接、桌面提交或连续计时入口。历史 V1.1 环境标识只用于原资料的读取和复核。
 
 
-V1.3 继承 V1.2 的容量、作答与提交生命周期，只改变判卷原子性和相关执行记录。旧 V1.2 的结构化 rubric 仍按该版本的组级会话执行；升级框架不自动迁移旧题包或重写原分数。采用 V1.3 时须新建修订、同步 task 与 evaluation 的版本、把原 Python 计分项或隐含多项要求改成原子 Agent 评分项，并重新校准。
+V1.3 继承 V1.2 的容量、作答与提交生命周期，采用逐子项独立判卷并保存相关执行记录；当前维护版的新题还采用上述加减分标准。旧 V1.2 的结构化 rubric 仍按该版本的组级会话执行；升级框架不自动迁移旧题包或重写原分数。采用 V1.3 时须新建修订、同步 task 与 evaluation 的版本、把原 Python 计分项或隐含多项要求改成原子 Agent 评分项，并重新校准。将已有题包迁移到加减分模式也必须由人类重新判断逐项方向、调整 criterion 与档位、更新 task_revision 和题包哈希，再单独验证；不能只改字段或取反旧原始分。当前 V1.3 同版本维护更新仅进入默认分支，不移动已发布标签或替换 Release 附件。
 
 总判卷时限必须按各组的子项数量 × 每项单次时限 × 最多三次尝试估算，并计入视图处理和实际并发。不能沿用只有父组数量的预算，也不能用合并子项会话节省调用数。框架在每个父组内串行执行子项，父组之间受统一并发上限约束；大图文输入按原有规则降低并发。
 
