@@ -2,11 +2,11 @@
 
 Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。
 
-当前版本：**V1.3**。任务包的 `protocol_version` 写作字符串 `"1.3"`。
+当前版本：**V1.4**。任务包的 `protocol_version` 写作字符串 `"1.4"`。
 
 HAICA Protocol 约定一道题要放哪些文件，以及平台怎样展示题面、接收交付物、判分和留档。出题者按这个格式打包，平台就能自动生成作答和评分流程。
 
-协议规定输入、输出和权限边界。页面样式、云厂商和服务器实现由平台决定；V1.3 的评分 Agent 固定为独立 DeepSeek Harness + DeepSeek。`protocol_version` 标识任务包格式；`task_revision` 和 `source_revision` 用于识别题目内容和绑定记录。结果包、归档和判卷接口各自使用独立的格式标识，例如 `task-result/v1`、`assessment-archive/v1`、`python/v1` 和 `llm/v1`。
+协议规定输入、输出和权限边界。页面样式、云厂商和服务器实现由平台决定；V1.4 的评分 Agent 固定为独立 DeepSeek Harness + DeepSeek。`protocol_version` 标识任务包格式；`task_revision` 和 `source_revision` 用于识别题目内容和绑定记录。结果包、归档和判卷接口各自使用独立的格式标识，例如 `task-result/v1`、`assessment-archive/v1`、`python/v1` 和 `llm/v1`。
 
 ## 1. 任务包结构
 
@@ -38,7 +38,7 @@ my-task/
     └── evaluation.toml            # 至少一条 rubric 和一个判卷器
 ```
 
-最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `additive_deductive/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。引用材料或参考资料时，也必须提供相应文件。
+最小结构仍必须在 `task.toml` 中声明至少一个产物槽位，并在 `evaluation.toml` 中声明可执行的 `weighted_sum/v1` 评分计划（至少一条 rubric 和一个判卷器）。这个最小目录适用于仅使用平台 Agent Judge 的任务。引用材料或参考资料时，也必须提供相应文件。
 
 ### 可见范围
 
@@ -95,7 +95,7 @@ name = "example/service-research"
 description = "根据给定数据完成分析并交付报告。"
 
 [assessment]
-protocol_version = "1.3"
+protocol_version = "1.4"
 task_revision = "research-001"
 title = "服务预约分析"
 language = "zh-CN"
@@ -120,7 +120,7 @@ compatible_profiles = ["linux-office"]
 
 | 字段 | 类型 / 必填 | 具体含义 |
 | --- | --- | --- |
-| `protocol_version` | 字符串 / 必填 | 整个任务包采用的格式版本，当前固定为 `"1.3"`。环境说明沿用这个版本。 |
+| `protocol_version` | 字符串 / 必填 | 整个任务包采用的格式版本，当前固定为 `"1.4"`。环境说明沿用这个版本。 |
 | `task_revision` | 字符串 / 必填 | 出题者给这份题目内容标记的修订号，例如 `research-001`，1–256 字符。它帮助人识别题目；平台另外计算整个题包的 SHA-256，实际评分绑定题包哈希。 |
 | `title` | 字符串 / 必填 | 显示给考生的题目名称，1–256 字符。 |
 | `language` | 字符串 / 必填 | 题面的主要语言标签，1–256 字符。建议使用 `zh-CN`、`en` 等语言代码；不会自动翻译内容。 |
@@ -270,13 +270,13 @@ XLSX 评分只读取可见工作表，排除 `hidden` 和 `veryHidden` 工作表
 
 ## 4. 评分计划
 
-`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。新构造任务使用 `additive_deductive/v1`：基础分默认为 0，加分项的最高得分合计 100，减分项的最高扣分不设统一上限。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位：
+`tests/evaluation.toml` 使用 UTF-8 TOML，属于私有评分资料。V1.4 新构造任务沿用 `weighted_sum/v1`，为每条 rubric 增加可选的 `direction` 标记：`add` 为加分、`deduct` 为减分，省略时默认 `add`。基础分默认为 0，加分项的最高得分合计 100，减分项的最高扣分不设统一上限。`additive_deductive/v1` 是相同规则的兼容别名。下面的配置假定 `task.toml` 已声明名为 `data` 和 `report` 的产物槽位：
 
 ```toml
-protocol_version = "1.3"
+protocol_version = "1.4"
 
 [aggregation]
-id = "additive_deductive/v1"
+id = "weighted_sum/v1"
 base_score = 0 # 可省略；显式声明也只能为 0
 max_score = 100
 round_decimals = 2
@@ -329,7 +329,7 @@ anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到�
 
 加分项最高分合计为 100；示例扣分项最高可扣 120 分，展示扣分值可以超过 100。若两项加分各得 50 分，同时发生上述错误，最终得分为 -20 分。这只是字段与计算示例，具体权重必须由出题者依据任务价值确定。
 
-核心内容、关键研究点、重要成果适合加分；格式问题、事实错误、逻辑问题、关键数据错误等适合扣分。由人类构造题目的时候来逐条判断 rubric 更适合哪种方式。扣分项的 `criterion`、`anchors` 或 `levels` 必须独立说明缺陷及严重程度：原始分 0 表示未发现所定义的缺陷，`scale_max` 表示全额扣分。平台不会自动把旧正确性得分取反。
+核心内容、关键研究点、重要成果适合加分；格式问题、事实错误、逻辑问题、关键数据错误等适合扣分。由人类构造题目的时候来逐条判断 rubric 更适合哪种方式，并通过 `direction` 的两个选项标记；不填写等同于选择 `add`。纯加分任务不需要新增扣分项，也不需要重写原有加分标准。扣分项的 `criterion`、`anchors` 或 `levels` 必须独立说明缺陷及严重程度：原始分 0 表示未发现所定义的缺陷，`scale_max` 表示全额扣分。平台不会自动把旧正确性得分取反。
 
 ### 评分计划字段
 
@@ -337,22 +337,22 @@ anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到�
 
 | 字段 | 类型 / 必填 | 具体含义 |
 | --- | --- | --- |
-| `protocol_version` | 字符串 / 必填 | 固定为 `"1.3"`，必须与 `task.toml` 一致。 |
+| `protocol_version` | 字符串 / 必填 | 固定为 `"1.4"`，必须与 `task.toml` 一致。 |
 | `aggregation` | 配置表 / 必填 | 汇总每条 rubric 的分数，字段见下表。 |
 | `verifiers` | 配置表数组 / 必填 | 1–100 个判卷器配置，用 `[[verifiers]]` 声明。 |
 | `rubrics` | 配置表数组 / 必填 | 1–100 个评分项或汇总组，用 `[[rubrics]]` 声明。无子项时本条独立判卷；有子项时逐子项独立判卷，父组不再判卷。 |
 | `extensions` | 配置表 / 可选 | 私有描述元数据，格式与任务配置中的扩展相同。 |
 
-`[aggregation]` 的 `id`、`max_score`、`round_decimals`、`on_error` 均必填；新题使用加减分模式。旧模式字段仅为已有题包和快照兼容保留：
+`[aggregation]` 的 `id`、`max_score`、`round_decimals`、`on_error` 均必填；V1.4 通过 rubric 的方向标记进行加减汇总。旧公式字段仅用于读取原版本题包和快照：
 
 | 字段 | 类型 / 允许值 | 具体含义 |
 | --- | --- | --- |
-| `id` | 字符串 | 新题固定为 `additive_deductive/v1`，按加分减扣分汇总；`weighted_sum/v1` 和 `formula/v1` 仅兼容已有题包与快照，保留原语义。 |
-| `base_score` | 数字 `0` / 加减分模式可选 | 省略时默认为 0；显式声明只允许 0，旧模式禁止此字段。 |
+| `id` | 字符串 | V1.4 默认写 `weighted_sum/v1`，按 rubric 方向将加分减去扣分；也接受等价别名 `additive_deductive/v1`。V1.4 不接受 `formula/v1`，旧版本公式题仍按原算法执行。 |
+| `base_score` | 数字 `0` / 可选 | V1.4 两个汇总标识下均可省略，默认 0；显式声明只允许 0。旧版本保留原字段约束。 |
 | `max_score` | 数字 `100` | 每题最高分固定 100 分，不限制扣分项最高扣分，也不设置最终得分下界；不是题库权重。 |
 | `round_decimals` | 整数 `2` | 只在最终总分上按十进制 half-up 舍入至两位小数；正负数均适用，中间贡献不先舍入。 |
 | `on_error` | 字符串 `withhold_total` | 任一必要评分失败时，总分保持 `null`，等待重试，不能算成考生零分。 |
-| `formula` | JSON 表达式字符串 / 旧公式模式必填 | 加减分模式与旧加权模式禁止此字段；旧公式模式只引用已完成的 rubric 原始分，不执行 Python 或任意表达式。规则见“历史声明式算分”。 |
+| `formula` | JSON 表达式字符串 / 仅旧版本公式模式必填 | V1.4 禁止此字段；旧公式模式只引用已完成的 rubric 原始分，不执行 Python 或任意表达式。规则见“历史声明式算分”。 |
 
 每个 `[[verifiers]]` 的字段：
 
@@ -360,7 +360,7 @@ anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到�
 | --- | --- | --- |
 | `id` | 字符串 / 必填 | 评分计划内唯一的小写 kebab-case 标识，最多 80 字符；rubric 用它选择判卷器。 |
 | `kind` | 字符串 / 必填 | 固定为 `llm`，每个最小评分项由 DeepSeek Harness + DeepSeek 判分。 |
-| `plugin_api` | 字符串 / 必填 | 固定为 `llm/v1`；这是接口标识，不随协议版本改成 v1.3。 |
+| `plugin_api` | 字符串 / 必填 | 固定为 `llm/v1`；这是接口标识，不随协议版本改成 v1.4。 |
 | `timeout_seconds` | 整数 / 必填 | 每个最小评分项（含每个 component）单次判分最长运行秒数，1–3,600；超时记评分错误。 |
 | `model_profile` | 字符串 / Agent Judge 必填 | 平台登记的逻辑配置：`deepseek-text-v1` 用于文字/表格，`deepseek-vision-v1` 还允许图像/页面。 |
 | `required_capabilities` | 字符串数组 / Agent Judge 必填 | **判卷器的输入能力**，不是工作空间软件清单。必须包含 `text`、`structured_output`；需要看图时再包含 `image`，并选择视觉配置。成员不重复，不得要求配置没有的能力。 |
@@ -375,11 +375,11 @@ anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到�
 | `inputs` | 配置表数组 / 必填 | 至少一组 `{artifact, view}`：`artifact` 必须是已声明产物的 ID；`view` 必须是该产物声明的视图。同一组不能重复。只把这些输入交给当前判卷器。 |
 | `verifier` | 字符串 / 必填 | 引用一个已声明的 `verifiers[].id`。多条 rubric 可引用同一配置，但不会共享判分会话。 |
 | `scale_max` | 数字 / 必填 | 当前评分项原始分满分，必须是有限正数，例如 4。 |
-| `direction` | 字符串 / 加减分模式必填 | `add` 为加分项，`deduct` 为减分项；旧加权与公式模式禁止此字段。 |
-| `weight` | 数字 / 必填 | 加减分模式中为有限正数，表示本项最高加分或扣分；所有 `add` 项合计必须恰好为 100，`deduct` 项单项及总额不受 100 限制。旧加权模式所有权重合计 100；旧公式模式固定为 0。 |
+| `direction` | 字符串 / 可选 | 额外的方向标记，只能选择 `add`（加分）或 `deduct`（减分）；省略默认为 `add`。既有无标记的加权题继续按纯加分理解；旧版本题包无需补写字段。旧公式题沿用原公式，不据此解释成纯加分。 |
+| `weight` | 数字 / 必填 | V1.4 中为有限正数，表示本项最高加分或扣分；所有 `add` 项（含省略标记的项）合计必须恰好为 100，`deduct` 项单项及总额不受 100 限制。旧加权模式所有权重合计 100；旧公式模式固定为 0。 |
 | `evidence_required` | 布尔值 / 必填 | 固定为 `true`，要求判卷器给出可核验的产物位置和证据。 |
 | `references` | 配置表数组 / 可选 | 私有参考文件，省略等于 `[]`。每项 `{id, path}` 的 `id` 是本评分项内唯一的 kebab-case 名称；`path` 是 `tests/`、`solution/` 或 `fixtures/` 内真实文件的相对路径。每个文件不超过 2 MiB。 |
-| `scoring` | 配置表 / 可选 | V1.3 独立子项计划；每个 component 单独启动 DSH + DeepSeek，不进入考生投影。 |
+| `scoring` | 配置表 / 可选 | 沿用 V1.3 的独立子项计划；每个 component 单独启动 DSH + DeepSeek，不进入考生投影。 |
 | `measurement` | 配置表 / 可选 | 先从冻结文件提取客观数据，供独立 Judge 核验；不能产生评分或代替 Judge，见“客观测量”。 |
 | `anchors` | 字符串数组 / 可选 | 非空、不重复的分档描述；加分项可写 `["0：未满足要求", "4：全部满足"]`，减分项可写 `["0：无所定义缺陷", "4：最严重缺陷"]`。填写时数组不能空；省略则只按 `criterion` 判断。 |
 | `description` | 字符串 / 可选 | 评分项的补充说明，1–10,000 字符，只供评分端和管理员使用。 |
@@ -390,7 +390,7 @@ anchors = ["0：没有声明错误数值", "1：声明了错误数值，达到�
 
 评分必须由后台程序全自动驱动。平台在评测结束、冻结并选定最终提交后自动入队；常驻评分脚本领取任务，按配置遍历每个最小评分项，启动 Harness、校验返回、重试失败项、汇总分数并交由归档服务保存。不能依赖人或另一个调度 Agent 逐项发消息、选择下一项或手工回填成绩。所有执行决策来自冻结的评分计划与程序状态。
 
-V1.3 的每一个实际评分项必须由独立的 **DeepSeek Harness + DeepSeek** 判卷。这里的“独立”指新进程、新 home、新 session，不是同一会话中的多条消息、多个工具调用或一次回答中的多行 JSON。
+V1.3/V1.4 的每一个实际评分项必须由独立的 **DeepSeek Harness + DeepSeek** 判卷。这里的“独立”指新进程、新 home、新 session，不是同一会话中的多条消息、多个工具调用或一次回答中的多行 JSON。
 
 - 未声明 `scoring` 的 rubric 是一个最小评分项，单独启动一次判卷会话。
 - 声明 `scoring` 时，父 rubric 只负责组织与汇总；**每一个 component 单独启动判卷会话**，包括零权重前提项。父组不再额外判分。禁止把两个或更多子项交给同一会话、同一最终回答或同一共享上下文。
@@ -398,7 +398,7 @@ V1.3 的每一个实际评分项必须由独立的 **DeepSeek Harness + DeepSeek
 - 单次评分运行内，每次子项重试也创建新的进程、home 和 session；仅重试失败项，已成功的兄弟项不跟着重判。一个子项失败不跳过其他子项；总时限已耗尽的未执行项须明确记录失败，整题不出总分。
 - 当前最小项只能读取其配置允许的冻结产物视图、题面及私有参考资料；不能接收兄弟项的判分结果、模型回答、上下文摘要或考生对话。共享原始只读文件不等于共享会话。公共基准可以复用，但每项都必须独立读取与核对。
 - `llm/v1` 使用平台配置的官方 `deepseek-flash`，只开放读取和搜索本项评分证据；不开放 shell、网页检索、编辑工具或考生沙盒。任务包不写服务地址、密钥或启动命令。
-- V1.3 不接受以 Python 代替 Agent 的计分 rubric。程序仍负责提交准入、哈希/文件/视图校验、客观测量、依赖上限及声明式算分；`python/v1` 计分接口仅为历史 V1.1/V1.2 题包兼容保留。
+- V1.3/V1.4 不接受以 Python 代替 Agent 的计分 rubric。程序仍负责提交准入、哈希/文件/视图校验、客观测量、依赖上限及声明式算分；`python/v1` 计分接口仅为历史 V1.1/V1.2 题包兼容保留。
 
 缺交和不合规产物由公开的前置规则处理；没有可供模型评价的输入时，不伪造会话或标成“模型已判卷”。存储完整性或视图处理故障保持评分失败。这里的前置状态处理与下述对有效评分输入逐项独立判卷须分别留档。
 
@@ -434,9 +434,9 @@ Agent Judge 的执行边界（全部按一个最小评分项的一次尝试计�
 
 `deepseek-flash` 是官方模型别名。平台保存请求的别名、响应中的模型标识和配置哈希；官方未提供不可变权重版本时，不能据此声称模型权重已经固定。跨时间比较分数需要另外做评分质量校准。
 
-### 结构化子项评分（V1.3）
+### 结构化子项评分（V1.3 起）
 
-rubric 可声明私有 `scoring`，保留 `weighted_components/v1` 的计算方式。V1.3 改变其执行粒度：有 N 个 components 就有 N 个独立 DSH + DeepSeek 判卷单位。无 `scoring` 时，本条 rubric 使用单独会话并返回下文的六字段结果。
+rubric 可声明私有 `scoring`，保留 `weighted_components/v1` 的计算方式。V1.4 沿用 V1.3 的执行粒度：有 N 个 components 就有 N 个独立 DSH + DeepSeek 判卷单位。无 `scoring` 时，本条 rubric 使用单独会话并返回下文的六字段结果。
 
 父 rubric 的 `criterion` 和 `anchors` 仅用于维护者理解汇总组，不作为多项共同判卷指令发给子项 Agent。每个 component 的 `criterion` 必须自足；共用判分约束写入其可读参考资料。平台为每次调用生成仅含当前一个 component 的评分配置，移除兄弟项、组权重和 `supports_any` 关系，将局部 `scale_max` 设为 1。父组的原始量表、方向与权重仅用于最后汇总，不把方向或权重交给 Judge。一个父 rubric 下所有 components 继承同一方向，不单独声明 `direction`；需要混合加分和减分时必须拆成不同父 rubric。扣分组的每个 component 都必须自足地描述缺陷程度，`score` 越大表示扣分越多。
 
@@ -524,7 +524,7 @@ supports_any = [["fact"]]
 
 ### 汇总规则
 
-新任务采用 `additive_deductive/v1`，初始基础分为 0。每个 rubric 的非负原始分先换算为加分或扣分数额：
+V1.4 使用 `weighted_sum/v1`（兼容别名 `additive_deductive/v1`），初始基础分为 0。先将省略的 `direction` 视为 `add`，再将每个 rubric 的非负原始分换算为加分或扣分数额：
 
 ```text
 本项数额 = raw_score / scale_max × weight
@@ -539,11 +539,11 @@ supports_any = [["fact"]]
 
 管理员评分明细保留评分计划中的方向、最高加/扣分、非负原始分和带符号的 `contribution`，使逐项贡献之和可复核为最终得分；模型仍只输出当前项原始判断，由平台应用加减方向。
 
-已有 `weighted_sum/v1` 题包和快照继续使用 `contribution = raw_score / scale_max × weight`，所有权重合计 100，总分范围仍为 0–100；已有 `formula/v1` 保留下节规则。两个旧模式均禁止 `direction` 和 `base_score`，不自动迁移旧题包、历史成绩或正在进行的评测。
+已有 V1.1/V1.2/V1.3 的无方向标记 `weighted_sum/v1` 题包和快照继续作为纯加分题执行：`contribution = raw_score / scale_max × weight`，所有权重合计 100，总分范围仍为 0–100。无需改题面、rubric、判卷器或题包文件，也无需升级版本或改变包哈希；旧版本继续按原版本校验和运行。已有 `formula/v1` 保留下节的原算法，不能把含扣分或门槛的公式自动当成纯加分。V1.3 已使用 `additive_deductive/v1` 的题包也保留自身规则。不自动迁移旧题包、历史成绩或正在进行的评测。
 
 ### 历史声明式算分
 
-`formula/v1` 仅用于兼容已有题包和快照的扣分、乘法折扣、硬门槛和相对基线计分。每个实际判断仍由独立 DSH + DeepSeek 产生，程序只在全部结果有效后做算术。不得把算式或其他 Judge 的输出交给某个模型再次决定总分。
+`formula/v1` 仅用于兼容 V1.3 已有题包和快照的扣分、乘法折扣、硬门槛和相对基线计分；V1.4 新题不使用此模式。每个实际判断沿用所属协议版本的判卷器与会话规则，程序只在全部结果有效后做算术。不得把算式或其他 Judge 的输出交给某个模型再次决定总分。
 
 formula 是 JSON 字符串：数字为常数；字符串为本计划的 rubric ID，取该项 raw_score（有精确有理数记录时使用该记录）；数组为 `[操作, 参数...]`。允许 add、mul、min、max（1–100 个参数），sub、div（两个参数），以及 round（数值和 0–8 位小数）。round 的整个数值参数子树按 Python 浮点算术及 ties-to-even 舍入执行，以保留旧脚本的运算次序；不能仅把有理数最终转为浮点后舍入，因为 `round(0.7 / 112, 4)` 与先精确计算分数的结果可能不同。例如 `formula = '["mul",100,"correctness","validity"]'`，两个独立项的满分均为 1，表示有效性门槛乘正确度。
 
@@ -783,7 +783,7 @@ rubric_family = "research"
 1. 任务包路径、编码、文件类型、硬链接和链接检查通过；
 2. `task.toml`、`evaluation.toml` 可解析且没有拼写字段；
 3. 每个产物槽位都有题面说明，所有 rubric 引用存在的产物和 view；
-4. 新题基础分为 0，逐条声明加/减方向，加分项最高得分恰好合计 100，扣分项最高扣分均为有限正数；判卷器入口、输入能力、超时和网络权限符合约束；
+4. 新题基础分为 0，每项方向为 `add` 或 `deduct`（省略按 `add`），加分项最高得分恰好合计 100，扣分项最高扣分均为有限正数；判卷器入口、输入能力、超时和网络权限符合约束；
 5. 独立评分项在正确、部分正确、错误、缺交和恶意文件样例上返回可解释结果；
 6. 每个原子 rubric / component（含零权重项）都有独立 DSH + DeepSeek 进程、home、session；同项重试也独立，已成功项不重跑；
 7. 每个 `required = true` 的产物至少被一条 rubric 使用；如果产物只收集、不计分，应明确设为 `required = false`；
@@ -796,18 +796,23 @@ rubric_family = "research"
 
 ## 版本兼容与历史保全
 
-V1.0、V1.1、V1.2 文档与已发布标签保持原样。V1.3 是独立版本；题包 `task.toml`、`tests/evaluation.toml` 和提交清单使用相同版本，并更新 task_revision 与包哈希。框架可并存读取 V1.1/V1.2/V1.3，但不得以新默认值改写已有题包、运行条件、提交、分数或归档。
+V1.0、V1.1、V1.2、V1.3 文档与已发布标签保持原样。V1.4 是独立版本；新建 V1.4 题包的 `task.toml`、`tests/evaluation.toml` 和提交清单使用相同版本，并记录新的 task_revision 与包哈希。框架可并存读取 V1.1/V1.2/V1.3/V1.4，不因框架更新强制升级已有题包，不用新默认值改写运行条件、提交、分数或归档。
 
-新 V1.3 作答冻结 `finalization=last_successful_submission_at_assessment_end`、`deadline_action=freeze_latest_or_missing`、`grading_start=assessment_end`。旧 V1.1 作答保持创建时的一次提交规则。升级协议需开始新一轮，不能在进行中的评测中切换规则。
+旧版无方向标记的加权题默认按纯加分题继续测评，原题面、rubric、判卷器、协议版本和题包哈希均可保持不变。V1.4 的方向只是 rubric 的附加标记，省略表示 `add`；不要求把原有加分条目改写成缺陷描述，也不要求增加减分项。已有公式题仍按原公式执行；若要取消其中的扣分或改成 V1.4 的加减汇总，须由人类确认新评分含义，另建修订并验证，不能声称只补标记就保持了原行为。
 
-V1.3 提交记录保存 `revision`、`previous_submission_id` 与 `selection_state`：最新成功但尚未结束为 provisional，更早版本为 superseded，结束选定版本为 final；已有旧提交视为 final。所有版本的原始清单和文件不可变。只有 final 版本进入评分与题库总分，其他版本保留在整轮归档及单题产物索引，禁止通过重判入口提前评分或改变最后版本选择。
+V1.4 沿用 V1.2/V1.3 的提交规则，冻结 `finalization=last_successful_submission_at_assessment_end`、`deadline_action=freeze_latest_or_missing`、`grading_start=assessment_end`。旧 V1.1 作答保持创建时的一次提交规则。升级协议需开始新一轮，不能在进行中的评测中切换规则。
+
+V1.2 及后续版本提交记录保存 `revision`、`previous_submission_id` 与 `selection_state`：最新成功但尚未结束为 provisional，更早版本为 superseded，结束选定版本为 final；已有旧提交视为 final。所有版本的原始清单和文件不可变。只有 final 版本进入评分与题库总分，其他版本保留在整轮归档及单题产物索引，禁止通过重判入口提前评分或改变最后版本选择。
 
 管理员报告必须区分内容已评、材料无效、缺交和评分服务异常，并记录实际 LLM 执行情况。流程 completed 不能解释成模型已读取并评价全部内容。新协议下复评旧产物应另建比较记录，不覆盖原评分或历史归档。
 
-V1.3 的执行环境仅为 Linux 云工作台，compatible_profiles 必须为 ["linux-office"]；协议不再定义独立桌面连接、桌面提交或连续计时入口。历史 V1.1 环境标识只用于原资料的读取和复核。
+V1.4 沿用 V1.3 的 Linux 云工作台环境，compatible_profiles 必须为 ["linux-office"]；协议不定义独立桌面连接、桌面提交或连续计时入口。历史 V1.1 环境标识只用于原资料的读取和复核。
 
+V1.3 引入逐子项独立判卷；V1.4 沿用该执行方式和 V1.2 的容量、作答与提交生命周期，并明确 rubric 的可选加减方向及其默认值。旧 V1.2 的结构化 rubric 仍按该版本的组级会话执行，旧 V1.1/V1.2 的 Python 判卷器也继续受支持。继续评测旧题不要求将其转为 Agent Judge。
 
-V1.3 继承 V1.2 的容量、作答与提交生命周期，采用逐子项独立判卷并保存相关执行记录；当前维护版的新题还采用上述加减分标准。旧 V1.2 的结构化 rubric 仍按该版本的组级会话执行；升级框架不自动迁移旧题包或重写原分数。采用 V1.3 时须新建修订、同步 task 与 evaluation 的版本、把原 Python 计分项或隐含多项要求改成原子 Agent 评分项，并重新校准。将已有题包迁移到加减分模式也必须由人类重新判断逐项方向、调整 criterion 与档位、更新 task_revision 和题包哈希，再单独验证；不能只改字段或取反旧原始分。当前 V1.3 同版本维护更新仅进入默认分支，不移动已发布标签或替换 Release 附件。
+主动升级旧题到 V1.4 时，须同步 task 与 evaluation 的版本并新建修订；若来源早于 V1.3，还须按 V1.3 起的执行约束，将 Python 计分项或隐含多项要求改成原子 Agent 评分项并重新校准。已经满足这些条件的 V1.3 加权题可保留原题面、权重、criterion 与档位，不写方向即为纯加分。只有人类决定将某项改为减分时，才为该项写 `direction = "deduct"`，并确认 criterion 与档位自足地描述缺陷程度；平台不会取反旧原始分。版本升级与评分含义改变都须保存新 task_revision 和包哈希，原包及历史结果继续保留。
+
+V1.4 对应独立的 v1.4.0 发布快照；同版本后续维护更新进入默认分支，不移动已有标签或替换 Release 附件。协议发布、框架源码支持、线上部署和实际题包迁移分别核验。
 
 总判卷时限必须按各组的子项数量 × 每项单次时限 × 最多三次尝试估算，并计入视图处理和实际并发。不能沿用只有父组数量的预算，也不能用合并子项会话节省调用数。框架在每个父组内串行执行子项，父组之间受统一并发上限约束；大图文输入按原有规则降低并发。
 
