@@ -1,5 +1,5 @@
-# V1.5：每条 rubric 只评一个产物，全部子项由同一 LLM 请求或 Agent 会话判定。
-protocol_version = "1.5"
+# V2.0：每条 rubric 只评一个产物，全部子项由同一 LLM 请求或 Agent 会话判定。
+protocol_version = "2.0"
 
 [aggregation]
 id = "weighted_sum/v1"

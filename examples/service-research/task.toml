@@ -6,14 +6,21 @@ name = "example/service-research"
 description = "使用给定运营数据，交付分析报告、指标表和图表。"
 
 [assessment]
-protocol_version = "1.5"
-task_revision = "example-1.5-001"
+protocol_version = "2.0"
+task_revision = "example-2.0-001"
 title = "校园服务预约情况分析"
 language = "zh-CN"
 difficulity = "medium"
 birthday = "2026-09-18T10:00:00+08:00"
 duration_minutes = 60
 evaluation = "tests/evaluation.toml"
+
+[assessment.capability_weights]
+learning = 60
+orchestration_execution = 70
+judgment_decision = 80
+delivery = 80
+creativity = 40
 
 [assessment.workspace]
 scope = "shared_per_user"
