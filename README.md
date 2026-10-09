@@ -1,16 +1,22 @@
 # AI协作能力测评协议
 
-Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V2.0**，新任务包使用 `protocol_version = "2.0"`。
+Human–AI Collaboration Assessment Protocol，简称 **HAICA Protocol**。当前版本为 **V2.1**，新任务包使用 `protocol_version = "2.1"`。
 
 HAICA Protocol 规定任务怎么写、交付物怎么提交、结果怎么评分和保存。
 
-## V2.0：整轮五维元能力评测
+## V2.1：整轮最佳实践反馈
+
+题目可在私有 `tests/best-practice.json` 中声明最佳实践。收卷后额外用一个独立 DeepSeek Flash / max Harness 会话检查整套已配置题目，给出已体现、部分体现、未观察到或不适用，以及可定位证据。只对适用但未充分体现的做法给简短、可执行的分点建议，不改变任何任务分数或元能力分数。
+
+标准和配置开考冻结，不加入题面或考生作答文件；接受同等有效的方法，区分用户行为与Agent自行行动。没有配置则跳过，采集或模型故障记录独立技术失败，含首次最多三次尝试，旧评测不回填。[字段与反馈规则](HAICA-Protocol.md#整轮最佳实践反馈v21)。
+
+## 沿用 V2.0：整轮五维元能力评测
 
 在原任务评分之外，给学习能力、任务编排与执行力、判断与决策能力、成果交付能力和创造力分别生成0—5分或N/A。五维不合并成新总分。
 
 结果侧把每个最小计分项的实际贡献映射到五维，以各维满分容量归一化；题目占比从容量自动导出。轨迹侧只看人的指令、追问、选择、纠偏和验收，3为合格基线，高低分须有正负证据；无人的行为证据为N/A，详细档位锚点尚未固化。
 
-学习、编排执行、判断默认结果60%／轨迹40%，交付、创造默认结果30%／轨迹70%。无轨迹证据时保留结果侧，但相应综合分为N/A。原产物评分、提交、连续计时和归档后释放沙盒规则保持。字段和公式见[整轮元能力评测](HAICA-Protocol.md#整轮元能力评测v20)。
+学习、编排执行、判断默认结果60%／轨迹40%，交付、创造默认结果30%／轨迹70%。无轨迹证据时保留结果侧，但相应综合分为N/A。原产物评分、提交、连续计时和归档后释放沙盒规则保持。字段和公式见[整轮元能力评测](HAICA-Protocol.md#整轮元能力评测v21)。
 
 ## 沿用 V1.5：两层 rubric，同一产物合并判卷
 
@@ -42,8 +48,9 @@ HAICA Protocol 规定任务怎么写、交付物怎么提交、结果怎么评�
 - [完整协议](HAICA-Protocol.md)：字段、两层 rubric、结果与归档要求。
 - [整轮轨迹判据](examples/meta-trajectory-rubric.json)：五维、正负证据与N/A规则，不固化未定档位。
 - [通用任务示例](examples/service-research/)：3 个产物、5 条顶层 rubric、16 个子项，演示直接 LLM 与 Agent。
-- [V2.0 维护快照 v2.0.1](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v2.0.1)：当前协议与示例；任务包版本仍为 `"2.0"`。
-- [协议版本变更记录](#协议版本变更记录)：V1.0 至 V2.0 的新增、修正与同版本维护记录。
+- [V2.0 维护快照 v2.0.1](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v2.0.1)：保留原元能力协议与示例；本目录维护V2.1。
+- [最佳实践示例](examples/service-research/tests/best-practice.json)：仅使用虚构的通用任务，真实任务标准保持私有。
+- [协议版本变更记录](#协议版本变更记录)：V1.0 至 V2.1 的新增、修正与同版本维护记录。
 
 ## 协议版本变更记录
 
@@ -58,6 +65,7 @@ HAICA Protocol 规定任务怎么写、交付物怎么提交、结果怎么评�
 | [V1.4](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.4.0) | 2026-10-08 | 在既有加权汇总中使用可选加减方向，明确旧题兼容；后续新增程序执行的得分门槛。 |
 | [V1.5](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.5.0) | 2026-10-08 | 两级 rubric、单产物分组评测，区分直接 LLM 与 Agent；10月9日维护加入可配置初始分、连续计时与到期自动收尾。 |
 | [V2.0](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v2.0.0) | 2026-10-09 | 首发增加题目与轨迹两路元能力；同日维护改为逐评分项容量归一、0—5雷达、分维度融合与无轨迹N/A，原任务评分保持 V1.5。 |
+| [V2.1](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v2.1.0) | 2026-10-09 | 增加可选私有最佳实践标准，整轮独立Harness检查并给建议；不改产物评分、元能力映射与连续计时，旧评测不回填。 |
 
 ### V1.0：建立完整的任务与评测合同
 
@@ -167,11 +175,21 @@ V1.4 的新增重点是**可选方向标记、兼容入口与得分门槛**；�
 - 学习、编排执行、判断默认结果60%／轨迹40%，交付、创造默认30%／70%。无轨迹则相应综合分N/A，不补0或重加权。
 - 原题面、任务评分与连续计时保持，旧 `v2.0.0` 标签和附件保留；平台按冻结配置解释历史结果，best practice内容不作为评分标准或题面提示。
 
+### V2.1：增加独立的最佳实践反馈
+
+**2026年10月9日发布，相对 V2.0 维护版：**
+
+- 新增可选 `assessment.best_practice` 和 `best-practice/v1` 私有JSON，每条含身份、标题、观察标准和建议模板；省略不运行。
+- 开考冻结标准、题包哈希及反馈执行配置。收卷后用额外的 Flash / max Harness 会话检查整套已配置题目的全部实践，独立记录实际调用与用量。
+- 使用 `observed`、`partial`、`not_observed`、`not_applicable` 四种结果，定位用户行为与原文，接受等效流程；不把Agent自行完成或缺少采集证据写成用户已经做过。
+- 只对适用的部分采用或未观察到项目给可操作的中文建议；反馈不计分，不改变原任务成绩或五维结果。技术异常单独记录，最多三次尝试，旧轮不回填。
+- V2.0及更早目录、标签、附件和历史结果冻结。新修订保留题面、原rubric、元能力映射、提交与连续计时；本记录区分协议准备、仓库发布、平台部署和实际模型验证。
+
 **后续记录方式：**每次修改注明日期、所属版本、增添或修正内容、兼容影响及对应提交；新版本另列小节，同版本维护追加到该版下。文档整理不自动产生新的协议版本号。公开 Release 保留发布时快照，当前规则以默认分支协议正文为准；平台是否部署、题包是否迁移、模型是否实测分别留证。
 
 ## 历史保全
 
-V1.1/V1.2/V1.3/V1.4/V1.5 题包继续按原提交与评分规则执行；尤其 V1.3/V1.4 仍逐原子项使用独立 Harness 会话，不能用 V1.5 的 `llm/v1` 含义重解释旧包。旧公式和 Python 判卷器按原版本保留。新建评测使用连续计时，已开始或已完成评测的冻结条件不变。升级框架不自动迁移题包或改写历史分数，新协议复评必须另外保存比较记录。
+V1.1/V1.2/V1.3/V1.4/V1.5/V2.0 题包继续按原提交与评分规则执行；尤其 V1.3/V1.4 仍逐原子项使用独立 Harness 会话，不能用 V1.5 的 `llm/v1` 含义重解释旧包。旧公式和 Python 判卷器按原版本保留。新建评测使用连续计时，已开始或已完成评测的冻结条件不变。升级框架不自动迁移题包或改写历史分数，新协议复评必须另外保存比较记录。
 
 默认分支展示当前维护内容；[V1.5](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.5.0)、[V1.4](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.4.0)、[V1.3](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.3.0)、[V1.2](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.2.0)、[V1.1](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.1.0) 和 [V1.0](https://github.com/tuzengji/HAICA-Protocol/releases/tag/v1.0.0) 标签与附件不覆盖。协议发布、框架代码、线上部署、题包迁移和真实模型验证分别核验。
 
