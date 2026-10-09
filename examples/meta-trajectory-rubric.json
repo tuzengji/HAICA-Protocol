@@ -1,524 +1,65 @@
 {
-  "id": "meta-capabilities",
-  "title": "整轮元能力评测",
-  "criterion": "仅依据用户的发起、选择、质疑、修正或推动行为评价人的能力；Agent自行形成的计划、核验、决策或创意不自动归因给用户。不按消息数量、文字长度、调用次数或耗时加分。重复出现的同一历史消息只能作为同一事件引用。每个正分必须给出可定位到用户行为的轨迹事件引用和具体理由；没有可归因证据时为0，不能从Agent的成功产物反推人的能力。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-  "inputs": [
+  "schema_version": "meta-trajectory/v2",
+  "dimensions": [
     {
-      "artifact": "trajectory",
-      "view": "text"
+      "id": "learning",
+      "label": "学习能力",
+      "focus": [
+        "识别知识缺口：指出完成任务所缺的知识、信息或理解，并提出相关问题。",
+        "针对性获取信息或解释：围绕知识缺口推动查找资料、获取解释或验证理解。",
+        "将新认识用于后续工作：将获得的知识用于修正理解、行动或产物。"
+      ]
+    },
+    {
+      "id": "orchestration_execution",
+      "label": "任务编排与执行力",
+      "focus": [
+        "明确目标与约束：形成可执行的任务目标，交代约束或划分工作。",
+        "安排步骤和依赖：安排工作的次序、并行关系或输入输出依赖。",
+        "根据进展推进或调整：推动任务继续执行，处理阻碍或调整安排。"
+      ]
+    },
+    {
+      "id": "judgment_decision",
+      "label": "判断与决策能力",
+      "focus": [
+        "核验证据：要求检查信息来源、计算、依据或关键结论，并据此判断可靠性。",
+        "比较方案与取舍：比较可行方案，依据任务目标和约束作出有理由的选择。",
+        "处理错误或不确定性：识别并处理信息不足、风险、矛盾或错误，校准判断。"
+      ]
+    },
+    {
+      "id": "delivery",
+      "label": "成果交付能力",
+      "focus": [
+        "明确验收标准：说明产物需要满足的内容、形式、使用场景或验收条件。",
+        "推动完成度和可用性检查：推动核对内容、运行或阅读效果，并处理发现的问题。",
+        "组织最终交付：推动材料整合、格式整理、最终版本选择或面向使用者的交付。"
+      ]
+    },
+    {
+      "id": "creativity",
+      "label": "创造力",
+      "focus": [
+        "提出有价值的方向：提出与任务相关、有价值的新问题、角度或解决方向。",
+        "组合信息形成方案：结合不同信息、经验或方法形成适合任务的方案。",
+        "验证并改进想法：推动试验、反馈或比较，据此改进创意或方案。"
+      ]
     }
   ],
-  "references": [],
-  "verifier": "meta-trajectory-judge",
-  "scale_max": 100,
-  "weight": 100,
-  "direction": "add",
-  "evidence_required": true,
-  "scoring": {
-    "id": "weighted_components/v1",
-    "groups": [
-      {
-        "id": "learning",
-        "weight": 0.2
-      },
-      {
-        "id": "orchestration-execution",
-        "weight": 0.2
-      },
-      {
-        "id": "judgment-decision",
-        "weight": 0.2
-      },
-      {
-        "id": "delivery",
-        "weight": 0.2
-      },
-      {
-        "id": "creativity",
-        "weight": 0.2
-      }
-    ],
-    "components": [
-      {
-        "id": "learning-gap",
-        "group": "learning",
-        "criterion": "识别知识缺口：指出完成任务所缺的知识、信息或理解，并提出相关问题。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "learning-acquisition",
-        "group": "learning",
-        "criterion": "针对性获取信息或解释：围绕知识缺口推动查找资料、获取解释或验证理解。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "learning-application",
-        "group": "learning",
-        "criterion": "将新认识用于后续工作：将获得的知识用于修正理解、行动或产物。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "orchestration-goal",
-        "group": "orchestration-execution",
-        "criterion": "明确目标与约束：形成可执行的任务目标，交代约束或划分工作。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "orchestration-sequence",
-        "group": "orchestration-execution",
-        "criterion": "安排步骤和依赖：安排工作的次序、并行关系或输入输出依赖。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "orchestration-adjustment",
-        "group": "orchestration-execution",
-        "criterion": "根据进展推进或调整：推动任务继续执行，处理阻碍或调整安排。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "judgment-evidence",
-        "group": "judgment-decision",
-        "criterion": "核验证据：要求检查信息来源、计算、依据或关键结论，并据此判断可靠性。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "judgment-comparison",
-        "group": "judgment-decision",
-        "criterion": "比较方案与取舍：比较可行方案，依据任务目标和约束作出有理由的选择。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "judgment-uncertainty",
-        "group": "judgment-decision",
-        "criterion": "处理错误或不确定性：识别并处理信息不足、风险、矛盾或错误，校准判断。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "delivery-standards",
-        "group": "delivery",
-        "criterion": "明确验收标准：说明产物需要满足的内容、形式、使用场景或验收条件。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "delivery-checks",
-        "group": "delivery",
-        "criterion": "推动完成度和可用性检查：推动核对内容、运行或阅读效果，并处理发现的问题。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "delivery-handoff",
-        "group": "delivery",
-        "criterion": "组织最终交付：推动材料整合、格式整理、最终版本选择或面向使用者的交付。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "creativity-direction",
-        "group": "creativity",
-        "criterion": "提出有价值的方向：提出与任务相关、有价值的新问题、角度或解决方向。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "creativity-combination",
-        "group": "creativity",
-        "criterion": "组合信息形成方案：结合不同信息、经验或方法形成适合任务的方案。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      },
-      {
-        "id": "creativity-iteration",
-        "group": "creativity",
-        "criterion": "验证并改进想法：推动试验、反馈或比较，据此改进创意或方案。分档：0=没有可归因的行为证据；25=提出笼统意图但未具体化；50=有具体且相关的行动；75=行动有效推进了工作；100=有证据支持该观察项从意图到落实的完整过程。不要求多轮对话，不要求先发生错误；简短但有效的指令可以充分体现能力。",
-        "levels": [
-          {
-            "id": "level-0",
-            "score": 0.0,
-            "support_score": 0.0
-          },
-          {
-            "id": "level-25",
-            "score": 0.25,
-            "support_score": 0.25
-          },
-          {
-            "id": "level-50",
-            "score": 0.5,
-            "support_score": 0.5
-          },
-          {
-            "id": "level-75",
-            "score": 0.75,
-            "support_score": 0.75
-          },
-          {
-            "id": "level-100",
-            "score": 1.0,
-            "support_score": 1.0
-          }
-        ]
-      }
-    ]
-  }
+  "score_range": [
+    1,
+    5
+  ],
+  "baseline": 3,
+  "rules": [
+    "只评价用户的指令、追问、选择、纠偏和验收行为；Agent自行完成的行动不自动归因给用户。",
+    "判断人的介入是否改变方向或质量，用Agent后续输出核验该介入的效果。",
+    "3分为合格基线；高于3分须有正向证据，低于3分须有负向证据；任何分数都必须有可定位的可信用户行为证据。",
+    "没有可归因的行为证据记N/A，不记0；完全自动执行且用户零介入时五维全部N/A。",
+    "不固化更细的档位锚点；各维观察提示不作为独立计分子项。",
+    "不按消息数量、文字长度、调用次数或耗时加分；不要求多轮对话或先发生错误。",
+    "重复出现在模型请求中的历史消息去重为同一事件；事实和评价均须引用轨迹事件。",
+    "只读取冻结题面、公开交付要求及整轮轨迹，不读取任务已得分或私有产物评分细则。"
+  ]
 }

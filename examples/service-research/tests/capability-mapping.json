@@ -1,0 +1,197 @@
+{
+  "schema_version": "rubric-capability-mapping/v1",
+  "mappings": [
+    {
+      "rubric_id": "metric-accuracy",
+      "component_id": "available-slots",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "理解给定指标并复算正确，主要体现数据判断和口径学习。"
+    },
+    {
+      "rubric_id": "metric-accuracy",
+      "component_id": "booked-slots",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "理解给定指标并复算正确，主要体现数据判断和口径学习。"
+    },
+    {
+      "rubric_id": "metric-accuracy",
+      "component_id": "completion-rate",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "理解给定指标并复算正确，主要体现数据判断和口径学习。"
+    },
+    {
+      "rubric_id": "metric-accuracy",
+      "component_id": "booking-rate",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "理解给定指标并复算正确，主要体现数据判断和口径学习。"
+    },
+    {
+      "rubric_id": "metric-accuracy",
+      "component_id": "completed-visits",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "理解给定指标并复算正确，主要体现数据判断和口径学习。"
+    },
+    {
+      "rubric_id": "analysis-grounding",
+      "component_id": "monthly-trend",
+      "weights": {
+        "learning": 0.25,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.7,
+        "delivery": 0.05,
+        "creativity": 0.0
+      },
+      "rationale": "理解趋势和站点差异并避免无根据因果推断，重在证据判断。"
+    },
+    {
+      "rubric_id": "analysis-grounding",
+      "component_id": "station-difference",
+      "weights": {
+        "learning": 0.25,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.7,
+        "delivery": 0.05,
+        "creativity": 0.0
+      },
+      "rationale": "理解趋势和站点差异并避免无根据因果推断，重在证据判断。"
+    },
+    {
+      "rubric_id": "analysis-grounding",
+      "component_id": "actionable-advice",
+      "weights": {
+        "learning": 0.1,
+        "orchestration_execution": 0.25,
+        "judgment_decision": 0.45,
+        "delivery": 0.0,
+        "creativity": 0.2
+      },
+      "rationale": "把数据转为有行动对象的改进方案，兼具判断、安排工作和方案构造。"
+    },
+    {
+      "rubric_id": "source-and-scope",
+      "component_id": "source",
+      "weights": {
+        "learning": 0.1,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.3,
+        "delivery": 0.6,
+        "creativity": 0.0
+      },
+      "rationale": "明确来源使交付物可回查，兼顾来源识别。"
+    },
+    {
+      "rubric_id": "source-and-scope",
+      "component_id": "period",
+      "weights": {
+        "learning": 0.2,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.6,
+        "delivery": 0.2,
+        "creativity": 0.0
+      },
+      "rationale": "准确说明统计时间范围，主要是统计口径判断与清楚表达。"
+    },
+    {
+      "rubric_id": "source-and-scope",
+      "component_id": "ratio",
+      "weights": {
+        "learning": 0.3,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.7,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "正确区分统计口径与概念，体现知识理解和判断。"
+    },
+    {
+      "rubric_id": "source-and-scope",
+      "component_id": "count",
+      "weights": {
+        "learning": 0.3,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.7,
+        "delivery": 0.0,
+        "creativity": 0.0
+      },
+      "rationale": "正确区分统计口径与概念，体现知识理解和判断。"
+    },
+    {
+      "rubric_id": "chart-clarity",
+      "component_id": "chart-values",
+      "weights": {
+        "learning": 0.1,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.8,
+        "delivery": 0.1,
+        "creativity": 0.0
+      },
+      "rationale": "图表数据与事实一致主要考查数值核验，兼顾可用交付。"
+    },
+    {
+      "rubric_id": "chart-clarity",
+      "component_id": "chart-labels",
+      "weights": {
+        "learning": 0.0,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.2,
+        "delivery": 0.8,
+        "creativity": 0.0
+      },
+      "rationale": "标题单位等完整标注直接服务读者正确使用图表。"
+    },
+    {
+      "rubric_id": "chart-clarity",
+      "component_id": "chart-scales",
+      "weights": {
+        "learning": 0.0,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.7,
+        "delivery": 0.3,
+        "creativity": 0.0
+      },
+      "rationale": "尺度不误导主要是表达中的判断，并影响阅读。"
+    },
+    {
+      "rubric_id": "chart-readability-penalty",
+      "component_id": "chart-readability",
+      "weights": {
+        "learning": 0.0,
+        "orchestration_execution": 0.0,
+        "judgment_decision": 0.0,
+        "delivery": 1.0,
+        "creativity": 0.0
+      },
+      "rationale": "重叠裁切等阅读障碍直接损害交付可用性。"
+    }
+  ]
+}
